@@ -97,7 +97,7 @@ function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
                 </div>
             )}
 
-            <div className="flex flex-col items-center justify-center font-monument font-bold tracking-[0.5px] uppercase leading-[0.95] text-[13vw] md:text-[9vw] text-zinc-300 group-hover:text-white transition-colors duration-300 relative z-20">
+            <div className="flex flex-col items-center justify-center font-monument font-bold tracking-[0.5px] uppercase leading-[1.1] md:leading-[0.95] text-[8vw] md:text-[6.5vw] text-zinc-300 group-hover:text-white transition-colors duration-300 relative z-20">
                 <div>{item.firstName}</div>
                 {item.lastName && <div>{item.lastName}</div>}
             </div>

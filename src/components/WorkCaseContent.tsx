@@ -86,7 +86,7 @@ export default function WorkCaseContent({
     return (
         <div className="relative w-full overflow-hidden">
             {/* ─── HERO SECTION ─── */}
-            <section className="relative min-h-[80vh] flex flex-col justify-center px-6 md:px-[8rem] pt-[15vh] pb-16">
+            <section className="relative min-h-[80vh] flex flex-col justify-center pl-16 pr-6 md:px-[8rem] pt-[15vh] pb-16">
                 {/* Background number */}
                 <div className="absolute right-[5vw] top-[10%] md:top-[20%] font-monument text-white/[0.03] text-[35vw] md:text-[25vw] font-bold leading-none pointer-events-none select-none z-0">
                     {study.number}
@@ -132,7 +132,7 @@ export default function WorkCaseContent({
             </section>
 
             {/* ─── MAIN SLIDESHOW SECTION ─── */}
-            <section className="relative w-full min-h-screen py-24 md:py-32 px-6 md:px-[8rem] flex items-center overflow-hidden">
+            <section className="relative w-full min-h-screen py-24 md:py-32 pl-14 pr-6 md:px-[8rem] flex items-center overflow-hidden">
                 {/* SUBTLE BACKGROUND IMAGE */}
                 <div 
                     className="absolute inset-0 z-0 pointer-events-none"
@@ -227,17 +227,16 @@ export default function WorkCaseContent({
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-black relative">
-                                        <iframe
-                                            src={`https://drive.google.com/file/d/${study.media[currentIndex].src}/preview`}
-                                            className="w-full h-full pointer-events-none"
-                                            style={{ border: "none" }}
-                                            allow="autoplay; encrypted-media"
-                                        />
-                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                            <div className="w-20 h-20 flex items-center justify-center rounded-full border border-white/20 bg-white/5 backdrop-blur-sm">
-                                                <Play className="w-10 h-10 text-white/50" />
-                                            </div>
-                                        </div>
+                                        <video
+                                            src={study.media[currentIndex].src}
+                                            poster={(study.media[currentIndex] as any).poster}
+                                            className="w-full h-full object-cover"
+                                            controls
+                                            controlsList="nodownload"
+                                            playsInline
+                                        >
+                                            Your browser does not support video playback.
+                                        </video>
                                     </div>
                                 )}
                             </motion.div>

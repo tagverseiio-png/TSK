@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import NoiseOverlay from "@/components/NoiseOverlay";
-import Navigation from "@/components/Navigation";
+import NoiseOverlayWrapper from "@/components/NoiseOverlayWrapper";
+import NavigationWrapper from "@/components/NavigationWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -23,8 +23,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable}`}>
       <body className="antialiased bg-brand-black text-brand-white selection:bg-brand-orange selection:text-white overflow-x-hidden min-h-screen">
-        <NoiseOverlay />
-        <Navigation />
+        <NoiseOverlayWrapper />
+        <NavigationWrapper />
         <main className="relative z-10 w-full h-full">
           {children}
         </main>

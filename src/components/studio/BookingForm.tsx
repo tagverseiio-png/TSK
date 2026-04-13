@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarDays, Clock, Send, Users, Video, Film, Scissors, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { CalendarDays, Clock, Send, Users, Video, Film, Scissors, ArrowRight, ArrowLeft, CheckCircle2, Lock } from "lucide-react";
 
-// Pricing Constants based on the provided package
-const PRICING = {
-  BASE_RATE: 80, // per hour
-  MIN_HOURS: 2,
-  VIDEO_COVERAGE: 200, // per hour
-  REEL_NO_SUBS: 100, // per reel
-  REEL_WITH_SUBS: 150, // per reel
-  FULL_PODCAST: 300, // per episode
-};
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-const WHATSAPP_NUMBER = "1234567890"; // TODO: Replace with actual number
-const TIME_SLOTS = ["10:00 AM", "01:00 PM", "04:00 PM", "07:00 PM"];
+export interface StudioConfig {
+  baseRate: number;
+  minHours: number;
+  videoCoverage: number;
+  reelNoSubs: number;
+  reelWithSubs: number;
+  fullPodcast: number;
+  whatsappNumber: string;
+  timeSlots: string[];
+}
 
 const STEPS = [
   { id: 1, title: "Your Details" },
@@ -24,19 +24,32 @@ const STEPS = [
   { id: 4, title: "Review" },
 ];
 
-export default function BookingForm() {
+export default function BookingForm({ config }: { config: StudioConfig }) {
+  const { baseRate, minHours, videoCoverage, reelNoSubs, reelWithSubs, fullPodcast, whatsappNumber, timeSlots } = config;
+
   const [step, setStep] = useState(1);
+  const [submitting, setSubmitting] = useState(false);
+  const [lockedSlots, setLockedSlots] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     date: "",
-    startTime: TIME_SLOTS[0],
-    duration: PRICING.MIN_HOURS,
+    startTime: timeSlots[0] ?? "10:00 AM",
+    duration: minHours,
     videoCoverage: false,
     reelsNoSubs: 0,
     reelsWithSubs: 0,
     fullPodcast: 0,
   });
+
+  // Fetch locked slots from Express when date changes
+  useEffect(() => {
+    if (!formData.date) { setLockedSlots([]); return; }
+    fetch(`${API_BASE}/api/availability?date=${formData.date}`)
+      .then((r) => r.json())
+      .then((d) => setLockedSlots(d.lockedSlots || []))
+      .catch(() => setLockedSlots([]));
+  }, [formData.date]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -52,40 +65,52 @@ export default function BookingForm() {
   };
 
   const totalPrice = useMemo(() => {
-    const baseCost = formData.duration * PRICING.BASE_RATE;
-    const videoCost = formData.videoCoverage ? formData.duration * PRICING.VIDEO_COVERAGE : 0;
-    const reelsNoSubsCost = formData.reelsNoSubs * PRICING.REEL_NO_SUBS;
-    const reelsWithSubsCost = formData.reelsWithSubs * PRICING.REEL_WITH_SUBS;
-    const fullPodcastCost = formData.fullPodcast * PRICING.FULL_PODCAST;
-
+    const baseCost = formData.duration * baseRate;
+    const videoCost = formData.videoCoverage ? formData.duration * videoCoverage : 0;
+    const reelsNoSubsCost = formData.reelsNoSubs * reelNoSubs;
+    const reelsWithSubsCost = formData.reelsWithSubs * reelWithSubs;
+    const fullPodcastCost = formData.fullPodcast * fullPodcast;
     return baseCost + videoCost + reelsNoSubsCost + reelsWithSubsCost + fullPodcastCost;
-  }, [formData]);
+  }, [formData, baseRate, videoCoverage, reelNoSubs, reelWithSubs, fullPodcast]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step < 4) {
       nextStep();
       return;
     }
 
+    setSubmitting(true);
+
+    // Save to MongoDB
+    try {
+      await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...formData, totalPrice }),
+      });
+    } catch (err) {
+      console.warn("Could not save booking to DB:", err);
+      // Don't block the WhatsApp redirect if DB fails
+    }
+
     // Construct WhatsApp Message
     const text = `*New Studio Booking Request*%0A%0A*Name:* ${formData.name}%0A*Phone:* ${formData.phone}%0A*Date:* ${formData.date}%0A*Time:* ${formData.startTime}%0A*Duration:* ${formData.duration} Hours%0A%0A*Packages Selected:*%0A- Studio Rental (${formData.duration}hrs)%0A- Video Coverage: ${formData.videoCoverage ? "Yes" : "No"}%0A- Reels (No Subs): ${formData.reelsNoSubs}%0A- Reels (With Subs): ${formData.reelsWithSubs}%0A- Full Podcast Edit: ${formData.fullPodcast}%0A%0A*Total Estimate:* $${totalPrice}`;
 
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${text}`;
+    setSubmitting(false);
     window.open(whatsappUrl, "_blank");
   };
 
   const nextStep = () => setStep((s) => Math.min(s + 1, 4));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
-  // Determine if 'Next' should be disabled based on current step
   const isNextDisabled = () => {
     if (step === 1 && (!formData.name || !formData.phone)) return true;
     if (step === 2 && !formData.date) return true;
     return false;
   };
 
-  // Animation variants
   const slideVariants = {
     hidden: { opacity: 0, x: 50 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.4 } },
@@ -133,7 +158,7 @@ export default function BookingForm() {
             {step === 1 && (
               <motion.div key="step1" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="flex-1 space-y-8">
                 <div className="text-center mb-8">
-                  <h3 className="font-monument text-2xl text-white">Let's get introduced</h3>
+                  <h3 className="font-monument text-2xl text-white">Let&apos;s get introduced</h3>
                   <p className="text-white/50 text-sm mt-2">Who are we reserving the studio for?</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
@@ -169,7 +194,7 @@ export default function BookingForm() {
               <motion.div key="step2" variants={slideVariants} initial="hidden" animate="visible" exit="exit" className="flex-1 space-y-8 max-w-3xl mx-auto w-full">
                 <div className="text-center mb-8">
                   <h3 className="font-monument text-2xl text-white">Choose your time</h3>
-                  <p className="text-white/50 text-sm mt-2">Select a date, a 3-hour slot, and total duration.</p>
+                  <p className="text-white/50 text-sm mt-2">Select a date, a slot, and total duration.</p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -193,14 +218,14 @@ export default function BookingForm() {
                     <div className="space-y-3">
                       <label className="text-[10px] text-brand-orange uppercase tracking-widest flex items-center justify-between">
                         <span>Duration (Hours)</span>
-                        <span className="text-white/40 normal-case tracking-normal">Min. 2 hours ($80/hr)</span>
+                        <span className="text-white/40 normal-case tracking-normal">Min. {minHours} hours (${baseRate}/hr)</span>
                       </label>
                       <div className="flex items-center gap-4 bg-white/5 border border-white/10 rounded-xl px-4 py-2 hover:bg-white/10 transition-all focus-within:border-brand-orange">
                         <input
                           required
                           type="number"
                           name="duration"
-                          min={PRICING.MIN_HOURS}
+                          min={minHours}
                           value={formData.duration}
                           onChange={handleInputChange}
                           className="w-full bg-transparent text-2xl text-white focus:outline-none py-2"
@@ -215,18 +240,18 @@ export default function BookingForm() {
                       <Clock size={14} /> Available Slots
                     </label>
                     <div className="grid grid-cols-2 gap-3">
-                      {TIME_SLOTS.map((slot) => {
-                        const isSoldOut = formData.date && slot === "01:00 PM";
+                      {timeSlots.map((slot) => {
+                        const isBooked = lockedSlots.includes(slot);
                         const isSelected = formData.startTime === slot;
                         
                         return (
                           <button
                             key={slot}
                             type="button"
-                            disabled={isSoldOut as boolean}
-                            onClick={() => setFormData({ ...formData, startTime: slot })}
+                            disabled={isBooked}
+                            onClick={() => !isBooked && setFormData({ ...formData, startTime: slot })}
                             className={`py-5 px-3 rounded-xl border transition-all flex flex-col items-center justify-center gap-1 ${
-                              isSoldOut 
+                              isBooked 
                                 ? "bg-white/5 border-white/5 text-white/20 cursor-not-allowed opacity-50" 
                                 : isSelected
                                   ? "bg-brand-orange border-brand-orange text-black scale-[1.03] shadow-lg shadow-brand-orange/20 z-10"
@@ -234,8 +259,10 @@ export default function BookingForm() {
                             }`}
                           >
                             <span className="font-monument text-sm">{slot}</span>
-                            {isSoldOut ? (
-                              <span className="text-[9px] uppercase font-bold tracking-widest text-red-500">Sold Out</span>
+                            {isBooked ? (
+                              <span className="flex items-center gap-1 text-[9px] uppercase font-bold tracking-widest text-red-400">
+                                <Lock size={8} /> Booked
+                              </span>
                             ) : (
                               <span className={`text-[9px] uppercase tracking-widest ${isSelected ? 'text-black/60' : 'text-brand-orange/60'}`}>Available</span>
                             )}
@@ -263,11 +290,11 @@ export default function BookingForm() {
                       </div>
                       <div>
                         <h4 className="font-monument text-xl text-white group-hover:text-brand-orange transition-colors">Video Coverage</h4>
-                        <p className="text-sm text-white/50 mt-1">Multi-camera setup, Lighting, & Technical Operator</p>
+                        <p className="text-sm text-white/50 mt-1">Multi-camera setup, Lighting, &amp; Technical Operator</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
-                      <span className="font-monument text-xl text-brand-orange/90">+$200<span className="text-sm text-white/40">/hr</span></span>
+                      <span className="font-monument text-xl text-brand-orange/90">+${videoCoverage}<span className="text-sm text-white/40">/hr</span></span>
                       <div className="relative">
                         <input 
                           type="checkbox" 
@@ -291,7 +318,7 @@ export default function BookingForm() {
                       </div>
                       <p className="text-xs text-white/50 mb-6 flex-1">Optimized for IG/TikTok (up to 90 seconds). Raw cut.</p>
                       <div className="flex items-center justify-between mt-auto">
-                        <span className="text-brand-orange font-monument">+$100<span className="text-[10px] text-white/40">/ea</span></span>
+                        <span className="text-brand-orange font-monument">+${reelNoSubs}<span className="text-[10px] text-white/40">/ea</span></span>
                         <input
                           type="number"
                           name="reelsNoSubs"
@@ -310,7 +337,7 @@ export default function BookingForm() {
                       </div>
                       <p className="text-xs text-white/50 mb-6 flex-1">Optimized for IG/TikTok (up to 90 seconds). Burned-in dynamic subtitles.</p>
                       <div className="flex items-center justify-between mt-auto">
-                        <span className="text-brand-orange font-monument">+$150<span className="text-[10px] text-white/40">/ea</span></span>
+                        <span className="text-brand-orange font-monument">+${reelWithSubs}<span className="text-[10px] text-white/40">/ea</span></span>
                         <input
                           type="number"
                           name="reelsWithSubs"
@@ -329,7 +356,7 @@ export default function BookingForm() {
                       </div>
                       <p className="text-xs text-white/50 mb-6 flex-1">Multi-cam switching, color correction, audio mastering. Final output ready for YouTube.</p>
                       <div className="flex items-center justify-between mt-auto">
-                        <span className="text-brand-orange font-monument">+$300<span className="text-[10px] text-white/40">/ep</span></span>
+                        <span className="text-brand-orange font-monument">+${fullPodcast}<span className="text-[10px] text-white/40">/ep</span></span>
                         <input
                           type="number"
                           name="fullPodcast"
@@ -373,7 +400,7 @@ export default function BookingForm() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-white/80">Video Coverage</span>
-                        {formData.videoCoverage ? <span className="text-brand-orange">Yes (+${PRICING.VIDEO_COVERAGE * formData.duration})</span> : <span className="text-white/30">None</span>}
+                        {formData.videoCoverage ? <span className="text-brand-orange">Yes (+${videoCoverage * formData.duration})</span> : <span className="text-white/30">None</span>}
                       </div>
                       {(formData.reelsNoSubs > 0 || formData.reelsWithSubs > 0 || formData.fullPodcast > 0) && (
                         <div className="flex justify-between items-center text-sm">
@@ -408,10 +435,10 @@ export default function BookingForm() {
             </button>
             <button
               type="submit"
-              disabled={isNextDisabled()}
+              disabled={isNextDisabled() || submitting}
               className="bg-brand-orange hover:bg-orange-500 text-black px-8 py-4 rounded-full font-monument uppercase tracking-wider flex items-center gap-3 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:pointer-events-none"
             >
-              {step === 4 ? "Confirm via WhatsApp" : "Next Step"}
+              {submitting ? "Saving..." : step === 4 ? "Confirm via WhatsApp" : "Next Step"}
               {step === 4 ? <Send size={18} /> : <ArrowRight size={18} />}
             </button>
           </div>
