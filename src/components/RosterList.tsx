@@ -31,7 +31,7 @@ export default function RosterList({ items, basePath, pageLabel, subline }: Rost
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.3 }}
-                    className="pt-[18vh] md:pt-[22vh] pb-16 md:pb-24 px-6 md:px-[5rem] relative z-30"
+                    className="pt-[22vh] md:pt-[28vh] pb-16 md:pb-24 px-6 md:px-[5rem] relative z-30"
                 >
                     <div className="flex items-end gap-4 md:gap-6 mb-6">
                         <h1 className="font-monument font-bold text-[10vw] md:text-[6vw] uppercase leading-[0.9] tracking-tight text-white">
