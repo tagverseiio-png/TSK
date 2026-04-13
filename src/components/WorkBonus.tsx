@@ -6,11 +6,11 @@ import { Users, Loader } from "lucide-react";
 
 // Fallback skeleton logos if none exist yet
 const PLACEHOLDER_LOGOS = [
-    "https://via.placeholder.com/200x100/15110f/444444?text=LOGO+1",
-    "https://via.placeholder.com/200x100/15110f/444444?text=LOGO+2",
-    "https://via.placeholder.com/200x100/15110f/444444?text=LOGO+3",
-    "https://via.placeholder.com/200x100/15110f/444444?text=LOGO+4",
-    "https://via.placeholder.com/200x100/15110f/444444?text=LOGO+5",
+    "https://placehold.co/200x100/15110f/444444.png?text=LOGO+1",
+    "https://placehold.co/200x100/15110f/444444.png?text=LOGO+2",
+    "https://placehold.co/200x100/15110f/444444.png?text=LOGO+3",
+    "https://placehold.co/200x100/15110f/444444.png?text=LOGO+4",
+    "https://placehold.co/200x100/15110f/444444.png?text=LOGO+5",
 ];
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -24,7 +24,8 @@ export default function WorkBonus() {
             .then(res => res.json())
             .then(data => {
                 if (data.clientLogos && data.clientLogos.length > 0) {
-                    setLogos(data.clientLogos);
+                    const fixedLogos = data.clientLogos.map((url: string) => url.replace(/^http:\/\/localhost:\d+/, API_BASE));
+                    setLogos(fixedLogos);
                 } else {
                     setLogos(PLACEHOLDER_LOGOS);
                 }

@@ -21,8 +21,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable}`}>
-      <body className="antialiased bg-brand-black text-brand-white selection:bg-brand-orange selection:text-white overflow-x-hidden min-h-screen">
+    <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>
+      <body className="antialiased bg-brand-black text-brand-white selection:bg-brand-orange selection:text-white overflow-x-hidden min-h-screen" suppressHydrationWarning>
         <NoiseOverlayWrapper />
         <NavigationWrapper />
         <main className="relative z-10 w-full h-full">

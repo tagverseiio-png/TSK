@@ -4,6 +4,8 @@ import type { MediaItem } from "@/components/MediaGallery";
 import clientPromise from "@/lib/mongodb";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 interface CaseStudy {
   name: string;
@@ -41,6 +43,8 @@ async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
     const doc = await db.collection("caseStudies").findOne({ slug });
     if (!doc) return null;
 
+    const fixUrl = (url?: string) => url ? url.replace(/^http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_API_URL || "https://tsk-alpha.vercel.app") : "";
+    
     return {
       name: doc.name as string,
       category: doc.category as string,
@@ -51,8 +55,12 @@ async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
       services: doc.services as string[],
       driveFolder: doc.driveFolder as string,
       number: doc.number as string,
-      media: doc.media as MediaItem[],
-      bgImage: doc.bgImage as string | undefined,
+      media: (doc.media as MediaItem[] || []).map(m => ({
+        ...m,
+        src: fixUrl(m.src),
+        poster: fixUrl(m.poster)
+      })),
+      bgImage: fixUrl(doc.bgImage as string | undefined),
     };
   } catch {
     return null;

@@ -8,8 +8,8 @@ import Combobox from "@/components/admin/Combobox";
 import { ArrowLeft, Plus, X, Film, Image as ImageIcon, Move, Loader, CheckCircle, Upload, AlertCircle } from "lucide-react";
 
 const CATEGORIES = [
-  "Creative Direction", "Professional Photography", "Social Media Content", 
-  "High-End Commercials", "Brand Campaigns", "Account Growth", 
+  "Creative Direction", "Professional Photography", "Social Media Content",
+  "High-End Commercials", "Brand Campaigns", "Account Growth",
   "Event Coverage", "Influencer Marketing", "Podcast Services", "Concert Production"
 ];
 const YEARS = ["2023", "2024", "2025", "2026"];
@@ -71,7 +71,7 @@ export default function EditWorkPage() {
           featured: work.featured || false,
         });
         setMedia((work.media || []).map((m: any) => ({ ...m })));
-      } catch {}
+      } catch { }
       setLoading(false);
     }
     load();
@@ -122,6 +122,8 @@ export default function EditWorkPage() {
       const heroImage = media.find((m) => m.type === "image" && m.src);
       await updateWork(workId, {
         ...form,
+        firstName: form.firstName,
+        lastName: form.lastName,
         image: heroImage?.src || form.name,
         bgImage: heroImage?.src || "",
         media: media.filter((m) => m.src).map(({ type, src, poster, caption }) => ({ type, src, poster, caption })),
@@ -150,8 +152,31 @@ export default function EditWorkPage() {
         <div className="bg-white/[0.02] border border-white/8 rounded-2xl p-6 space-y-6">
           <h2 className="font-monument text-sm text-white/60 uppercase tracking-widest">Basic Info</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Field label="Project Name *"><input required className={inputCls} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></Field>
+            <Field label="First Name (Project Name) *">
+              <input required className={inputCls} value={form.firstName} onChange={(e) => {
+                const val = e.target.value;
+                setForm((f) => ({
+                  ...f,
+                  firstName: val,
+                  name: val + (f.lastName ? " " + f.lastName : ""),
+                  slug: (val + (f.lastName ? "-" + f.lastName : "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+                }));
+              }} />
+            </Field>
+            <Field label="Last Name">
+              <input className={inputCls} value={form.lastName} onChange={(e) => {
+                const val = e.target.value;
+                setForm((f) => ({
+                  ...f,
+                  lastName: val,
+                  name: f.firstName + (val ? " " + val : ""),
+                  slug: (f.firstName + (val ? "-" + val : "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+                }));
+              }} />
+            </Field>
+
             <Field label="URL Slug *"><input required className={inputCls} value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} /></Field>
+
             <Field label="Category"><Combobox value={form.category} onChange={(val) => setForm((f) => ({ ...f, category: val }))} options={CATEGORIES} /></Field>
             <Field label="Year"><Combobox value={form.year} onChange={(val) => setForm((f) => ({ ...f, year: val }))} options={YEARS} /></Field>
             <Field label="Number"><input className={inputCls} value={form.number} onChange={(e) => setForm((f) => ({ ...f, number: e.target.value }))} /></Field>
@@ -186,9 +211,9 @@ export default function EditWorkPage() {
             <div key={idx} className="flex items-start gap-4 bg-white/[0.03] border border-white/8 rounded-xl p-4">
               <div className="w-20 h-14 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 flex items-center justify-center">
                 {item.uploading ? <Loader size={18} className="text-brand-orange animate-spin" /> :
-                 item.error ? <AlertCircle size={18} className="text-red-400" /> :
-                 item.type === "video" ? <Film size={24} className="text-white/40" /> :
-                 <img src={item.preview || item.src} alt="" className="w-full h-full object-cover" />}
+                  item.error ? <AlertCircle size={18} className="text-red-400" /> :
+                    item.type === "video" ? <Film size={24} className="text-white/40" /> :
+                      <img src={item.preview || item.src} alt="" className="w-full h-full object-cover" />}
               </div>
               <div className="flex-1">
                 <input className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-orange transition-all" value={item.caption} onChange={(e) => setMedia((prev) => prev.map((m, i) => i === idx ? { ...m, caption: e.target.value } : m))} placeholder="Caption" />

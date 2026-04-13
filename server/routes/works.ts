@@ -22,6 +22,9 @@ router.get("/", async (_req: Request, res: Response) => {
     await client.connect();
     const db = client.db(dbName);
     const works = await db.collection("caseStudies").find({}).sort({ number: 1 }).toArray();
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     return res.json(works);
   } catch (err) {
     return res.status(500).json({ error: "Failed to fetch works" });
@@ -39,6 +42,9 @@ router.get("/:slug", async (req: Request, res: Response) => {
     const db = client.db(dbName);
     const work = await db.collection("caseStudies").findOne({ slug: req.params.slug });
     if (!work) return res.status(404).json({ error: "Not found" });
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     return res.json(work);
   } catch (err) {
     return res.status(500).json({ error: "Failed to fetch work" });

@@ -3,7 +3,8 @@ import WorkBonus from "@/components/WorkBonus";
 import clientPromise from "@/lib/mongodb";
 
 export const dynamic = "force-dynamic";
-
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 async function getCaseStudies() {
   try {
     const client = await clientPromise.connect();
@@ -14,6 +15,8 @@ async function getCaseStudies() {
       .sort({ number: 1 })
       .toArray();
 
+    const fixUrl = (url?: string) => url ? url.replace(/^http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_API_URL || "https://tsk-alpha.vercel.app") : "";
+
     return docs.map((doc) => ({
       id: doc._id.toString(),
       firstName: (doc.firstName as string) || "",
@@ -21,7 +24,7 @@ async function getCaseStudies() {
       slug: doc.slug as string,
       count: doc.count as string,
       category: doc.category as string,
-      image: doc.image as string,
+      image: fixUrl(doc.image as string),
       featured: (doc.featured as boolean) || false,
     }));
   } catch (err) {

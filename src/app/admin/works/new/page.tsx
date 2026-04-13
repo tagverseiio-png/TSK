@@ -60,10 +60,21 @@ export default function NewWorkPage() {
 
   const [media, setMedia] = useState<MediaItem[]>([]);
 
-  // Auto-generate slug from name
-  const handleNameChange = (val: string) => {
-    const slug = val.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    setForm((f) => ({ ...f, name: val, slug }));
+  // Auto-generate slug from names
+  const handleFirstNameChange = (val: string) => {
+    setForm((f) => {
+      const slug = (val + (f.lastName ? "-" + f.lastName : "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const name = val + (f.lastName ? " " + f.lastName : "");
+      return { ...f, firstName: val, name, slug };
+    });
+  };
+
+  const handleLastNameChange = (val: string) => {
+    setForm((f) => {
+      const slug = (f.firstName + (val ? "-" + val : "")).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const name = f.firstName + (val ? " " + val : "");
+      return { ...f, lastName: val, name, slug };
+    });
   };
 
   const processFiles = async (files: File[]) => {
@@ -154,8 +165,8 @@ export default function NewWorkPage() {
       const heroImage = media.find((m) => m.type === "image" && m.src);
       const payload = {
         ...form,
-        firstName: form.firstName || form.name.split(" ")[0] || form.name,
-        lastName: form.lastName || form.name.split(" ").slice(1).join(" "),
+        firstName: form.firstName,
+        lastName: form.lastName,
         image: heroImage?.src || "",
         bgImage: heroImage?.src || "",
         media: media.filter((m) => m.src).map(({ type, src, poster, caption }) => ({
@@ -194,12 +205,19 @@ export default function NewWorkPage() {
           <h2 className="font-monument text-sm text-white/60 uppercase tracking-widest">Basic Info</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Field label="Project Name *">
+            <Field label="First Name (Project Name) *">
               <input
-                required className={inputCls} placeholder="Chuan Watch"
-                value={form.name} onChange={(e) => handleNameChange(e.target.value)}
+                required className={inputCls} placeholder="Chuan"
+                value={form.firstName} onChange={(e) => handleFirstNameChange(e.target.value)}
               />
             </Field>
+            <Field label="Last Name">
+              <input
+                className={inputCls} placeholder="Watch"
+                value={form.lastName} onChange={(e) => handleLastNameChange(e.target.value)}
+              />
+            </Field>
+
             <Field label="URL Slug *">
               <input
                 required className={inputCls} placeholder="chuan-watch"
@@ -207,6 +225,7 @@ export default function NewWorkPage() {
                 onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))}
               />
             </Field>
+
             <Field label="Category *">
               <Combobox
                 required placeholder="Product Photography"
