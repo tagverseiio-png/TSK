@@ -55,10 +55,10 @@ async function getCaseStudy(slug: string): Promise<CaseStudy | null> {
       services: doc.services as string[],
       driveFolder: doc.driveFolder as string,
       number: doc.number as string,
-      media: (doc.media as MediaItem[] || []).map(m => ({
+      media: (doc.media as any[] || []).map(m => ({
         ...m,
         src: fixUrl(m.src),
-        poster: fixUrl(m.poster)
+        ...(m.poster ? { poster: fixUrl(m.poster) } : {})
       })),
       bgImage: fixUrl(doc.bgImage as string | undefined),
     };
