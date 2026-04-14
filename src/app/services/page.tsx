@@ -18,11 +18,13 @@ async function getServices() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tskapi.t4gverse.com';
     const fixUrl = (url?: string) => {
       if (!url) return '';
-      return url
-        .replace(/^http:\/\/localhost:\/d+/, apiUrl)
-        .replace(/^http:\/\/localhost:\/d+/, apiUrl)
-        .replace(/^http:\/\/localhost:4000/, apiUrl)
-        .replace(/^http:\/\/localhost:/, apiUrl);
+      if (url.includes('localhost:4000')) {
+        return url.replace('http://localhost:4000', apiUrl);
+      }
+      if (url.includes('localhost')) {
+        return url.replace('http://localhost', apiUrl);
+      }
+      return url;
     };
 
     return docs.map((doc) => ({
