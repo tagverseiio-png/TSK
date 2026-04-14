@@ -76,8 +76,8 @@ function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
                 </div>
             )}
 
-            {/* Index number on the left */}
-            <div className="absolute left-6 md:left-[5rem] top-1/2 -translate-y-1/2 font-monument text-white/10 text-[8vw] md:text-[5vw] font-bold z-10 pointer-events-none transition-colors duration-500 will-change-transform">
+            {/* Index number on the left (Desktop Only) */}
+            <div className="hidden md:block absolute left-[5rem] top-1/2 -translate-y-1/2 font-monument text-white/10 text-[5vw] font-bold z-10 pointer-events-none transition-colors duration-500 will-change-transform">
                 {String(index + 1).padStart(2, "0")}
             </div>
 
@@ -88,15 +88,15 @@ function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
                 </div>
             )}
 
-            <div className="flex flex-col items-center justify-center font-monument font-bold tracking-[0.5px] uppercase leading-[1.1] md:leading-[0.95] text-[8vw] md:text-[6.5vw] text-zinc-300 group-hover:text-white transition-colors duration-300 relative z-20 will-change-colors">
+            <div className="flex flex-col items-center justify-center text-center font-monument font-bold tracking-[0.5px] uppercase leading-[1.1] md:leading-[1] text-[6vw] sm:text-[4.5vw] md:text-[3.5vw] lg:text-[3vw] text-zinc-300 group-hover:text-white transition-colors duration-300 relative z-20 w-full px-6 md:px-[15vw]">
                 <div>{item.firstName}</div>
-                {item.lastName && <div>{item.lastName}</div>}
+                {item.lastName && <div className="mt-1 md:mt-2">{item.lastName}</div>}
             </div>
 
-            {/* Right side Camera and count */}
-            <div className="absolute right-[5vw] top-1/2 -translate-y-1/2 flex items-center gap-3 font-monument text-white/40 text-[4vw] md:text-[1.8vw] group-hover:text-white/80 transition-colors duration-300 z-20 pointer-events-none">
+            {/* Right side / Bottom Camera and count */}
+            <div className="absolute right-6 bottom-6 md:right-[5vw] md:bottom-auto md:top-1/2 md:-translate-y-1/2 flex items-center gap-3 font-monument text-white/40 text-[10px] md:text-[1.8vw] group-hover:text-white/80 transition-colors duration-300 z-20 pointer-events-none">
                 {/* SVG Camera Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 131.4 101" className="w-[1.8rem] md:w-[2.2rem] fill-[#15110f] stroke-white/40 stroke-[4px] group-hover:stroke-white/80 transition-colors duration-300 mt-[-0.3rem]">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 131.4 101" className="w-[1.2rem] md:w-[2.2rem] fill-[#15110f] stroke-white/40 stroke-[4px] group-hover:stroke-white/80 transition-colors duration-300 mt-[-0.3rem]">
                     <path d="M99.2,39.2c-.3-4.6-3.9-8.4-8.5-8.7-1.7-.1-10.8.3-11.4-.2-.9-1.9-.9-4.5-2.5-6.1s-1.8-1-2.7-1.1c-5.3-.5-11.5.3-16.9,0-3.8.5-3.7,4.3-4.8,7.1-.7.5-9.7,0-11.5.2-4.9.3-8.2,4.1-8.7,8.9.5,9.3-.7,19.3,0,28.5.5,7.4,5,9.6,11.8,9.9,13.3.6,28.5.3,41.8-.2,4.5-.2,8.2.6,11.4-3.4,1.8-2.2,2.1-4.4,2.2-7.2.3-9.2-.5-18.6-.1-27.8h0ZM69.6,54c-2.4,2.2-2.6,5.9-3.8,8.8-.4,0-1.7-5.9-2.2-6.9-2-3.7-6.7-4-10.2-5.2,3.4-1.2,7.5-1.4,9.7-4.6,1.7-2.4,1.4-5.3,2.7-7.8,1.2,3.2,1.3,7.4,4.4,9.6,2.3,1.7,4.6,1.6,7.1,2.3.4.1.8.1.9.7-2.8.9-6.3,1.1-8.5,3.2h-.1ZM91.7,41.9c-2.2,1.9-5.2-1.2-3.2-3.5,2-2.4,5.9,1.2,3.2,3.5Z" />
                 </svg>
                 {item.count}
