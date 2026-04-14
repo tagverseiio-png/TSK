@@ -14,6 +14,7 @@ export interface StudioConfig {
   reelWithSubs: number;
   fullPodcast: number;
   whatsappNumber: string;
+  contactEmail?: string;
   timeSlots: string[];
 }
 
@@ -25,7 +26,7 @@ const STEPS = [
 ];
 
 export default function BookingForm({ config }: { config: StudioConfig }) {
-  const { baseRate, minHours, videoCoverage, reelNoSubs, reelWithSubs, fullPodcast, whatsappNumber, timeSlots } = config;
+  const { baseRate, minHours, videoCoverage, reelNoSubs, reelWithSubs, fullPodcast, whatsappNumber, contactEmail, timeSlots } = config;
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -34,7 +35,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
     name: "",
     phone: "",
     date: "",
-    startTime: timeSlots[0] ?? "10:00 AM",
+    startTime: "", // Initially empty to force selection or handle explicitly
     duration: minHours,
     videoCoverage: false,
     reelsNoSubs: 0,
@@ -47,9 +48,20 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
     if (!formData.date) { setLockedSlots([]); return; }
     fetch(`${API_BASE}/api/availability?date=${formData.date}`)
       .then((r) => r.json())
-      .then((d) => setLockedSlots(d.lockedSlots || []))
+      .then((d) => {
+        const locked = d.lockedSlots || [];
+        setLockedSlots(locked);
+        
+        // If current startTime is locked, or if startTime is not selected, try to find first available
+        if (!formData.startTime || locked.includes(formData.startTime)) {
+          const firstAvailable = timeSlots.find(s => !locked.includes(s));
+          if (firstAvailable) setFormData(prev => ({ ...prev, startTime: firstAvailable }));
+        }
+      })
       .catch(() => setLockedSlots([]));
-  }, [formData.date]);
+  }, [formData.date, timeSlots]);
+
+  const isAllSlotsFull = formData.date && lockedSlots.length >= timeSlots.length;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -76,7 +88,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step < 4) {
-      nextStep();
+      if (!isNextDisabled()) nextStep();
       return;
     }
 
@@ -107,7 +119,9 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
 
   const isNextDisabled = () => {
     if (step === 1 && (!formData.name || !formData.phone)) return true;
-    if (step === 2 && !formData.date) return true;
+    if (step === 2) {
+      if (!formData.date || !formData.startTime || lockedSlots.includes(formData.startTime)) return true;
+    }
     return false;
   };
 
@@ -124,6 +138,22 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
         <p className="text-white/60 text-lg max-w-2xl mx-auto">
           Reserve your slot for our premium podcast studio. Review the packages and hit book to finalize over WhatsApp.
         </p>
+        
+        {/* Added Contact Details Block */}
+        <div className="mt-6 flex flex-wrap justify-center gap-6 md:gap-12">
+           <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-brand-orange hover:text-white transition-colors group">
+              <div className="w-8 h-8 rounded-full bg-brand-orange/10 flex items-center justify-center group-hover:bg-brand-orange group-hover:text-black transition-all">
+                <Send size={14} />
+              </div>
+              <span className="font-monument text-[10px] tracking-widest uppercase">WhatsApp: +{whatsappNumber}</span>
+           </a>
+           <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 text-brand-orange hover:text-white transition-colors group">
+              <div className="w-8 h-8 rounded-full bg-brand-orange/10 flex items-center justify-center group-hover:bg-brand-orange group-hover:text-black transition-all">
+                <Users size={14} />
+              </div>
+              <span className="font-monument text-[10px] tracking-widest uppercase">Email: {contactEmail}</span>
+           </a>
+        </div>
       </div>
 
       {/* Progress Indicator */}
@@ -195,6 +225,16 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                 <div className="text-center mb-8">
                   <h3 className="font-monument text-2xl text-white">Choose your time</h3>
                   <p className="text-white/50 text-sm mt-2">Select a date, a slot, and total duration.</p>
+                  
+                  {isAllSlotsFull && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-monument uppercase tracking-widest flex items-center justify-center gap-2"
+                    >
+                      <Lock size={14} /> This date is currently full
+                    </motion.div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

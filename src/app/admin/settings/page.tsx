@@ -132,6 +132,16 @@ export default function AdminSettingsPage() {
             />
             <p className="text-white/20 text-xs">No spaces or dashes. Example: 6591234567</p>
           </div>
+          <div className="space-y-2">
+            <label className="text-[10px] text-brand-orange uppercase tracking-widest">Contact Email (Gmail)</label>
+            <input
+              type="email"
+              className={inputCls}
+              placeholder="admin@thesimplekrew.com"
+              value={(config as any).contactEmail || ""}
+              onChange={(e) => setConfig((c) => ({ ...c, contactEmail: e.target.value }))}
+            />
+          </div>
         </div>
 
         {/* Time Slots */}

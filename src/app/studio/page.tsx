@@ -23,6 +23,7 @@ async function getStudioConfig() {
       reelWithSubs: config.reelWithSubs as number,
       fullPodcast: config.fullPodcast as number,
       whatsappNumber: config.whatsappNumber as string,
+      contactEmail: config.contactEmail as string || "admin@thesimplekrew.com",
       timeSlots: config.timeSlots as string[],
     };
   } catch (err) {
@@ -36,6 +37,7 @@ async function getStudioConfig() {
       reelWithSubs: 150,
       fullPodcast: 300,
       whatsappNumber: "1234567890",
+      contactEmail: "admin@thesimplekrew.com",
       timeSlots: ["10:00 AM", "01:00 PM", "04:00 PM", "07:00 PM"],
     };
   }

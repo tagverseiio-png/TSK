@@ -73,7 +73,7 @@ export default function HomeVideo() {
     };
 
     return (
-        <div className="fixed inset-0 w-full h-full z-10 overflow-hidden bg-[#15110f]">
+        <div className="fixed inset-0 w-full h-full z-10 overflow-hidden">
             {/* Dark gradient overlays */}
             <div className="absolute inset-0 z-[2] pointer-events-none bg-gradient-to-b from-[#15110f80] to-transparent h-[30rem]" />
             <div className="absolute bottom-0 left-0 w-full z-[2] pointer-events-none bg-gradient-to-t from-[#15110f] via-[#15110f]/80 to-transparent h-[30rem]" />

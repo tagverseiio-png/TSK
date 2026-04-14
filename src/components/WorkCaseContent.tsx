@@ -119,10 +119,10 @@ export default function WorkCaseContent({
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.3 }}
-                    className="font-monument font-bold text-[15vw] md:text-[9vw] uppercase leading-[0.85] tracking-tight text-white relative z-10 mb-8 will-change-[transform,opacity]"
+                    className="font-monument font-bold text-[11.5vw] md:text-[9vw] uppercase leading-[0.85] tracking-tight text-white relative z-10 mb-8 will-change-[transform,opacity] flex flex-col gap-2"
                 >
                     {study.name.split(" ").map((word, i) => (
-                        <div key={i}>{word}</div>
+                        <div key={i} className="break-words break-all max-w-full">{word}</div>
                     ))}
                 </motion.h1>
 
@@ -155,20 +155,20 @@ export default function WorkCaseContent({
                 <div className="grid grid-cols-1 lg:grid-cols-[45%_55%] gap-12 lg:gap-[80px] items-center w-full relative z-10">
                     
                     {/* ── LEFT COLUMN: Text Content & Captions ── */}
-                    <div className="flex flex-col gap-10">
+                    <div className="flex flex-col gap-10 max-w-full overflow-hidden">
                         {/* Hero Tagline / Statement */}
                         <motion.div
                             initial={{ opacity: 0, x: -30 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8 }}
-                            className="will-change-[transform,opacity]"
+                            className="will-change-[transform,opacity] max-w-full"
                         >
                             <div className="w-12 h-[2px] bg-brand-orange mb-8" />
-                            <h2 className="text-white text-[20px] md:text-[24px] lg:text-[28px] leading-[1.2] tracking-tight font-monument uppercase">
+                            <h2 className="text-white text-[16px] sm:text-[18px] md:text-[24px] lg:text-[28px] leading-[1.3] md:leading-[1.2] tracking-tight font-monument uppercase break-words w-full hyphens-auto">
                                 {study.heroTagline.split(" ").slice(0, 4).join(" ")}
-                                <br />
-                                <span className="text-brand-orange">{study.heroTagline.split(" ").slice(4).join(" ")}</span>
+                                <br className="hidden md:block" />
+                                <span className="text-brand-orange ml-1 md:ml-0">{study.heroTagline.split(" ").slice(4).join(" ")}</span>
                             </h2>
                         </motion.div>
 
