@@ -90,8 +90,9 @@ export default function ContactPage() {
                 </div>
 
                 {/* Footer Logo - Text Version */}
-                <footer className="w-full mt-32 mb-12 flex-grow flex items-end justify-center md:justify-start">
+                <footer className="w-full mt-32 mb-12 flex-grow flex flex-col items-center justify-center md:justify-start md:items-start gap-4">
                     <h1 className="font-monument leading-[0.9] text-[9vw] md:text-[5vw] outline-none border-none tracking-tighter mix-blend-difference opacity-[0.85] m-0 text-white uppercase">THE SIMPLE KREW<span className="text-brand-orange">.</span></h1>
+                    <p className="text-white/50 text-[12px] font-sans">&copy; 2026 The Simple Krew. All rights reserved.</p>
                 </footer>
             </div>
         </div>

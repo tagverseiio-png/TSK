@@ -9,25 +9,25 @@ const projects = [
         id: 1,
         title: "Creative Direction & Concept Planning",
         description: "This is the foundation. Strategy + ideas that drive everything else.",
-        video: "/video1.mp4"
+        video: "/video2.mp4"
     },
     {
         id: 2,
         title: "Professional Photography & Videography",
         description: "Core production service. High demand, visual impact, premium pricing.",
-        video: "/video2.mp4"
+        video: "/video3.mp4"
     },
     {
         id: 3,
         title: "High-End Commercial Ads",
         description: "Biggest money-maker. Brands pay more for cinematic ad production.",
-        video: "/video3.mp4"
+        video: "/video4.mp4"
     },
     {
         id: 4,
         title: "Brand Campaigns & Strategy",
         description: "Long-term client retention + higher-ticket projects.",
-        video: "/video4.mp4"
+        video: "/video1.mp4"
     }
 ];
 
@@ -94,7 +94,7 @@ export default function HomeVideo() {
                         playsInline
                         onEnded={handleVideoEnd}
                         onLoadedMetadata={handleLoadedMetadata}
-                        className="w-full h-full object-cover grayscale"
+                        className="w-full h-full object-cover"
                     >
                         <source src={projects[activeIndex].video} type="video/mp4" />
                     </motion.video>

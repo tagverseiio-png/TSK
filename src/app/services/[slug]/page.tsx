@@ -66,8 +66,12 @@ export default function ServicePage() {
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8 }}
-                    className="mb-12"
+                    className="mb-12 relative"
                 >
+                    <Link href="/services" className="inline-flex items-center gap-2 text-white/50 hover:text-brand-orange transition-colors font-monument text-[10px] tracking-widest uppercase mb-8">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        Back to Services
+                    </Link>
                     <span className="font-monument text-brand-orange text-[12px] tracking-[4px] uppercase mb-4 block">Service {service.number}</span>
                     <h1 className="font-monument text-5xl md:text-7xl lg:text-[7vw] leading-none uppercase mb-8">
                         {service.title}
