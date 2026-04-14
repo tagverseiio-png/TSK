@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getClients, createClient, updateClient, deleteClient, uploadClientLogo } from "@/lib/adminApi";
+import { getClients, createClient, updateClient, deleteClient, uploadClientLogo, API_BASE } from "@/lib/adminApi";
 import { Plus, Trash2, MoveUp, MoveDown, Image as ImageIcon, Loader2, X } from "lucide-react";
 import Image from "next/image";
+
+const fixUrl = (url: string) => url.replace(/^http:\/\/localhost:\d+/, API_BASE);
 
 interface Client {
   _id: string;
@@ -27,7 +29,8 @@ export default function AdminClients() {
   async function loadClients() {
     try {
       const data = await getClients();
-      setClients(data);
+      const fixedData = data.map(c => ({ ...c, logo: fixUrl(c.logo) }));
+      setClients(fixedData);
     } catch (err) {
       console.error("Failed to load clients", err);
     } finally {
@@ -86,7 +89,7 @@ export default function AdminClients() {
     setUploadingLogo(true);
     try {
       const { url } = await uploadClientLogo(file);
-      setEditClient(prev => ({ ...prev, logo: url }));
+      setEditClient(prev => ({ ...prev, logo: fixUrl(url) }));
     } catch (err) {
       alert("Upload failed");
     } finally {
