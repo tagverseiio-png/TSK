@@ -12,27 +12,34 @@ async function getServices() {
     const docs = await db
       .collection('services')
       .find({})
-      .sort({ count: 1 })
+      .sort({ number: 1 })
       .toArray();
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tskapi.t4gverse.com';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
     const fixUrl = (url?: string) => {
       if (!url) return '';
-      // Handle localhost URLs (dev) or any incorrect server URLs
-      if (url.includes('localhost') || url.includes('127.0.0.1')) {
-        return url.replace(/http:\/\/[^/]+/, apiUrl);
+      // If we are on production, replace localhost with the API URL
+      if (process.env.NODE_ENV === 'production' && url.includes('localhost')) {
+        return url.replace(/http:\/\/localhost:\d+/, apiUrl);
       }
       return url;
     };
 
-    return docs.map((doc) => ({
-      id: doc._id.toString(),
-      firstName: (doc.firstName as string) || '',
-      lastName: (doc.lastName as string) || '',
-      slug: doc.slug as string,
-      count: doc.count as string,
-      image: fixUrl(doc.image as string),
-    }));
+    return docs.map((doc) => {
+      const title = (doc.title as string) || '';
+      const parts = title.split(' ');
+      const firstName = parts[0] || 'Service';
+      const lastName = parts.slice(1).join(' ') || '';
+
+      return {
+        id: doc._id.toString(),
+        firstName,
+        lastName,
+        slug: doc.slug as string,
+        count: doc.number as string || '01',
+        image: fixUrl(doc.mediaUrl as string),
+      };
+    });
   } catch (err) {
     console.error('[services] Failed to fetch services:', err);
     return [];
