@@ -15,7 +15,7 @@ const services = [
 
 export default function ServicesPage() {
     return (
-        <div className="min-h-screen bg-[#15110f] w-full overflow-hidden">
+        <div className="min-h-screen bg-[#15110f] w-full">
             <RosterList items={services} basePath="services" />
         </div>
     );

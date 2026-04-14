@@ -23,7 +23,7 @@ interface RosterListProps {
 
 export default function RosterList({ items, basePath, pageLabel, subline }: RosterListProps) {
     return (
-        <div className="bg-[#15110f] min-h-screen text-white overflow-hidden flex flex-col">
+        <div className="bg-[#15110f] min-h-screen text-white flex flex-col">
 
             {/* Page Hero Header */}
             {pageLabel && (

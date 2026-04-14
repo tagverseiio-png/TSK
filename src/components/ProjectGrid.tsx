@@ -20,7 +20,7 @@ export default function ProjectGrid({ title, projects, basePath }: { title: stri
     const secondHalf = title.slice(halfway).toUpperCase();
 
     return (
-        <div className="min-h-screen bg-[#15110f] overflow-hidden">
+        <div className="min-h-screen bg-[#15110f] overflow-x-hidden">
 
             {/* Massive Hero Text Section */}
             <div className="relative w-full h-screen flex items-center justify-center pointer-events-none">

@@ -84,7 +84,7 @@ export default function WorkCaseContent({
     }, [isAutoPlaying, nextSlide]);
 
     return (
-        <div className="relative w-full overflow-hidden">
+        <div className="relative w-full overflow-x-hidden">
             {/* ─── HERO SECTION ─── */}
             <section className="relative min-h-[80vh] flex flex-col justify-center pl-16 pr-6 md:px-[8rem] pt-[15vh] pb-16">
                 {/* Background number */}
