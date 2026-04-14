@@ -1,143 +1,132 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import clientPromise from "@/lib/mongodb";
-import ProjectGrid from "@/components/ProjectGrid";
-import CleanServiceHero from "@/components/CleanServiceHero";
+import Image from "next/image";
+import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
 
-export function generateStaticParams() {
-    return [
-        { slug: 'creative-direction' },
-        { slug: 'professional-photography' },
-        { slug: 'social-media-content' },
-        { slug: 'commercial-ads' },
-        { slug: 'brand-campaigns' },
-        { slug: 'account-growth' },
-        { slug: 'event-coverage' },
-        { slug: 'influencer-marketing' },
-        { slug: 'podcast-services' },
-        { slug: 'concert-production' },
-    ]
+interface ServiceData {
+    _id?: string;
+    slug: string;
+    title: string;
+    description: string;
+    features: string[];
+    mediaUrl?: string;
+    mediaType?: 'image' | 'video';
+    number: string;
 }
 
-async function getServiceWorks(slug: string) {
-    try {
-        const client = await clientPromise.connect();
-        const db = client.db(process.env.MONGODB_DB || "TSK");
+export default function ServicePage() {
+    const params = useParams();
+    const slug = params.slug as string;
+    const [service, setService] = useState<ServiceData | null>(null);
+    const [loading, setLoading] = useState(true);
 
-        // Map slug to category if needed, or search by tag
-        // For now, let's just get featured or latest works to ensure page has content
-        const docs = await db
-            .collection("caseStudies")
-            .find({})
-            .limit(6)
-            .toArray();
+    useEffect(() => {
+        const fetchService = async () => {
+            try {
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/services/${slug}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setService(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch service:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchService();
+    }, [slug]);
 
-        const fixUrl = (url?: string) => url ? url.replace(/^http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_API_URL || "https://tsk-alpha.vercel.app") : "";
-
-        return docs.map((doc) => ({
-            id: doc._id.toString(),
-            brand: (doc.firstName as string) || "TSK",
-            director: (doc.category as string) || "Project",
-            slug: (doc.slug as string) || "",
-            image: fixUrl(doc.image as string),
-            size: "medium" as const
-        }));
-    } catch (err) {
-        console.error("[service] Failed to fetch works:", err);
-        return [];
-    }
-}
-
-export default async function ServicePage({ params }: { params: Promise<{ slug: string }> }) {
-    const { slug } = await params;
-    const relatedWorks = await getServiceWorks(slug);
-
-    const names: Record<string, string> = {
-        'creative-direction': "Creative Direction",
-        'professional-photography': "Professional Photography",
-        'social-media-content': "Social Media Content",
-        'commercial-ads': "High-End Commercials",
-        'brand-campaigns': "Brand Campaigns",
-        'account-growth': "Account Growth",
-        'event-coverage': "Event Coverage",
-        'influencer-marketing': "Influencer Marketing",
-        'podcast-services': "Podcast Services",
-        'concert-production': "Concert Production",
-    };
-
-    const numbers: Record<string, string> = {
-        'creative-direction': "01",
-        'professional-photography': "02",
-        'social-media-content': "03",
-        'commercial-ads': "04",
-        'brand-campaigns': "05",
-        'account-growth': "06",
-        'event-coverage': "07",
-        'influencer-marketing': "08",
-        'podcast-services': "09",
-        'concert-production': "10",
-    };
-
-    const bios: Record<string, string> = {
-        'creative-direction': "TRANSLATING VISION INTO VISUAL AUTHORITY. WE ARCHITECT THE NARRATIVE ARC AND AESTHETIC BLUEPRINT THAT DEFINES YOUR BRAND'S LEGACY.",
-        'professional-photography': "CAPTURING THE IMPERCEPTIBLE. HIGH-END STILL IMAGERY DESIGNED TO EVOKE EMOTION AND COMMAND INSTANT MARKET ATTENTION.",
-        'social-media-content': "DYNAMIC ENGAGEMENT. WE CRAFT SHORT-FORM NARRATIVES THAT DISRUPT THE SCROLL AND CONVERT FLEETING ATTENTION INTO BRAND LOYALTY.",
-        'commercial-ads': "CINEMATIC STORYTELLING. WE PRODUCE BROADCAST-QUALITY COMMERCIALS THAT MERGE ARTISTRY WITH AGGRESSIVE MARKET POSITIONING.",
-        'brand-campaigns': "INTEGRATED DOMINANCE. COHESIVE STRATEGIES ACROSS ALL TOUCHPOINTS TO ENSURE YOUR BRAND VOICES ARE LOUD, CLEAR, AND UNFORGETTABLE.",
-        'account-growth': "VIRAL VELOCITY. DATA-DRIVEN SCALING STRATEGIES TO EXPAND YOUR DIGITAL FOOTPRINT AND MAXIMIZE AUDIENCE RETENTION.",
-        'event-coverage': "IMMERSIVE DOCUMENTATION. WE CAPTURE THE ENERGY AND SCALE OF YOUR EVENTS, TRANSFORMING MOMENTS INTO PERENNIAL MARKETING ASSETS.",
-        'influencer-marketing': "STRATEGIC ALIGNMENT. CONNECTING YOUR BRAND WITH AUTHORITATIVE VOICES TO GENERATE AUTHENTIC TRUST AND MASSIVE REACH.",
-        'podcast-services': "AUDITORY AUTHORITY. END-TO-END PRODUCTION FOR PODCASTS THAT POSITION YOU AS A THOUGHT LEADER IN YOUR INDUSTRY.",
-        'concert-production': "SPECTACLE ENGINEERING. FROM STAGE DESIGN TO LIVE VISUALS, WE CREATE AUDIO-VISUAL EXPERIENCES THAT DEFINE THE CULTURAL MOMENT.",
-    };
-
-    const currentName = names[slug] || 'Strategy';
-    const currentNumber = numbers[slug] || '00';
-    const currentBio = bios[slug] || '';
-
-    const servicesList = Object.keys(names).map(s => ({
-        slug: s,
-        name: names[s].toUpperCase(),
-        number: numbers[s]
-    })).sort((a, b) => parseInt(a.number) - parseInt(b.number));
+    if (loading) return <div className="min-h-screen bg-[#15110f] flex items-center justify-center text-white font-monument">Loading...</div>;
+    if (!service) return <div className="min-h-screen bg-[#15110f] flex items-center justify-center text-white font-monument">Service Not Found</div>;
 
     return (
-        <div className="relative min-h-screen bg-[#15110f] flex flex-col overflow-y-auto overflow-x-hidden">
-            {/* Desktop Side Navigation */}
-            <div className="hidden md:flex flex-col gap-3 fixed right-[4rem] top-1/2 -translate-y-1/2 z-40 text-[9px] font-bold tracking-[1.5px] font-monument uppercase mix-blend-difference pointer-events-auto items-end">
-                <span className="text-white/20 mb-4 tracking-[3px]">Index</span>
-                {servicesList.map((srv) => (
-                    <Link
-                        key={srv.slug}
-                        href={`/services/${srv.slug}`}
-                        className={`transition-all duration-300 py-1 border-r-2 pr-4 ${slug === srv.slug ? 'text-brand-orange border-brand-orange' : 'text-white/30 border-transparent hover:text-white/80 hover:border-white/20'}`}
+        <div className="relative min-h-screen bg-[#15110f] text-white flex flex-col overflow-x-hidden pt-32 pb-20 px-6 md:px-[5rem] lg:px-[8rem]">
+            {/* Header / Hero Area */}
+            <div className="max-w-6xl w-full mx-auto">
+                <motion.div 
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="mb-12"
+                >
+                    <span className="font-monument text-brand-orange text-[12px] tracking-[4px] uppercase mb-4 block">Service {service.number}</span>
+                    <h1 className="font-monument text-5xl md:text-7xl lg:text-[7vw] leading-none uppercase mb-8">
+                        {service.title}
+                    </h1>
+                    <p className="text-white/60 text-lg md:text-xl leading-relaxed max-w-3xl font-light tracking-wide">
+                        {service.description}
+                    </p>
+                </motion.div>
+
+                {/* Main Content: Features | Media */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mt-20">
+                    {/* Left: Key Features */}
+                    <motion.div 
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.8, delay: 0.2 }}
+                        className="space-y-12"
                     >
-                        {srv.name}
-                    </Link>
-                ))}
-            </div>
+                        <h2 className="font-monument text-2xl uppercase tracking-tighter border-b border-white/10 pb-4 w-fit">Key Features</h2>
+                        <div className="grid grid-cols-1 gap-8">
+                            {service.features.map((feature, i) => (
+                                <div key={i} className="group border-b border-white/5 pb-6">
+                                    <span className="text-brand-orange font-monument text-[10px] mb-2 block opacity-50 group-hover:opacity-100 transition-opacity">{(i + 1).toString().padStart(2, '0')}</span>
+                                    <h3 className="font-monument text-sm md:text-lg uppercase group-hover:translate-x-2 transition-transform duration-300">{feature}</h3>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
 
-            {/* Main Content Area */}
-            <div className="flex flex-col w-full">
-                {/* Hero Section */}
-                <section className="min-h-screen flex items-center justify-center">
-                    <CleanServiceHero title={currentName} bio={currentBio} number={currentNumber} />
-                </section>
-            </div>
-
-            {/* Mobile Bottom Navigation */}
-            <div className="md:hidden fixed bottom-0 left-0 w-full z-50 bg-[#15110f]/80 backdrop-blur-md border-t border-white/10 px-6 py-4">
-                <div className="flex gap-6 overflow-x-auto no-scrollbar pb-2">
-                    {servicesList.map((srv) => (
-                        <Link
-                            key={srv.slug}
-                            href={`/services/${srv.slug}`}
-                            className={`whitespace-nowrap font-monument text-[9px] tracking-[1px] uppercase transition-colors ${slug === srv.slug ? 'text-brand-orange' : 'text-white/40'}`}
-                        >
-                            {srv.name}
-                        </Link>
-                    ))}
+                    {/* Right: Media Showcase */}
+                    <motion.div 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 1, delay: 0.4 }}
+                        className="relative aspect-square md:aspect-[4/5] w-full bg-white/5 rounded-[2rem] overflow-hidden group shadow-2xl backdrop-blur-sm"
+                    >
+                        {service.mediaUrl ? (
+                            service.mediaType === 'video' ? (
+                                <video 
+                                    src={service.mediaUrl} 
+                                    autoPlay 
+                                    muted 
+                                    loop 
+                                    playsInline 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <Image 
+                                    src={service.mediaUrl} 
+                                    alt={service.title} 
+                                    fill 
+                                    className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
+                                />
+                            )
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-white/10">
+                                <span className="font-monument text-[10px] text-white/20 uppercase">Media Showcase</span>
+                            </div>
+                        )}
+                        
+                        {/* Abstract Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-brand-black/40 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute bottom-10 left-10 z-20">
+                             <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center animate-pulse">
+                                <div className="w-2 h-2 rounded-full bg-brand-orange" />
+                             </div>
+                        </div>
+                    </motion.div>
                 </div>
             </div>
+
+            {/* Background Decorations */}
+            <div className="fixed top-0 right-0 w-1/2 h-full bg-brand-orange/5 blur-[150px] pointer-events-none z-0" />
+            <div className="fixed bottom-0 left-0 w-1/3 h-1/2 bg-white/5 blur-[120px] pointer-events-none z-0" />
         </div>
     );
 }

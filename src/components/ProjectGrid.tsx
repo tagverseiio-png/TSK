@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 interface Project {
@@ -27,10 +28,17 @@ export default function ProjectGrid({ title, projects, basePath }: { title: stri
                 <div className="relative flex flex-col items-center justify-center text-white font-monument font-bold leading-[0.8] tracking-tight uppercase text-[15vw] md:text-[18vw]">
                     {/* Central Logo behind/between text */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[24vw] md:w-[15vw]">
-                        <img src="/IMG-20250512-WA0018-removebg-preview.png" alt="TSK Logo" className="w-full h-auto invert mix-blend-screen opacity-50" />
+                        <Image 
+                            src="/IMG-20250512-WA0018-removebg-preview.png" 
+                            alt="TSK Logo" 
+                            width={500}
+                            height={500}
+                            className="w-full h-auto invert mix-blend-screen opacity-50 will-change-transform" 
+                            priority
+                        />
                     </div>
-                    <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8 }} className="z-20 mix-blend-difference">{firstHalf}</motion.div>
-                    <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, delay: 0.1 }} className="z-20 mix-blend-difference ml-[10%] md:ml-[15%]">{secondHalf}</motion.div>
+                    <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8 }} className="z-20 mix-blend-difference will-change-[transform,opacity]">{firstHalf}</motion.div>
+                    <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, delay: 0.1 }} className="z-20 mix-blend-difference ml-[10%] md:ml-[15%] will-change-[transform,opacity]">{secondHalf}</motion.div>
                 </div>
 
                 {/* Huge Numbers to the side like "11" or "03" from screenshots */}
@@ -46,17 +54,26 @@ export default function ProjectGrid({ title, projects, basePath }: { title: stri
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1, duration: 0.8 }}
-                        className="group block overflow-hidden rounded-[2rem] bg-[#15110f] break-inside-avoid"
+                        className="group block overflow-hidden rounded-[2rem] bg-[#15110f] break-inside-avoid will-change-[transform,opacity]"
                     >
                         <Link href={`/${basePath}/${proj.slug}`} className="block w-full h-full cursor-pointer">
-                            <div className="relative w-full aspect-[4/5] object-cover md:aspect-auto md:h-[40rem] overflow-hidden rounded-[2rem]">
+                            <div className="relative w-full aspect-[4/5] md:h-[40rem] overflow-hidden rounded-[2rem]">
                                 <motion.div
-                                    className="w-full h-full bg-cover bg-center"
-                                    style={{ backgroundImage: `url(${proj.image})` }}
+                                    className="relative w-full h-full"
                                     whileHover={{ scale: 1.05 }}
                                     transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                                />
-                                <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-[#15110f]/80 to-transparent flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                >
+                                    <Image
+                                        src={proj.image}
+                                        alt={proj.brand}
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                        className="object-cover will-change-transform"
+                                        loading={idx < 4 ? "eager" : "lazy"}
+                                        priority={idx < 2}
+                                    />
+                                </motion.div>
+                                <div className="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-[#15110f]/80 to-transparent flex justify-between items-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
                                     <div className="text-white font-bold tracking-[0.5px] uppercase text-[15px] md:text-[1.8rem]">
                                         {proj.brand}
                                     </div>

@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useCallback, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronLeft, ChevronRight, Play } from "lucide-react";
-import type { MediaItem } from "@/components/MediaGallery";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+
+interface MediaItem {
+    type: 'image' | 'video';
+    src: string;
+    caption?: string;
+    poster?: string;
+}
 
 interface StudyData {
     name: string;
@@ -17,7 +24,6 @@ interface StudyData {
     driveFolder: string;
     number: string;
     media: MediaItem[];
-    // Background image for the media section
     bgImage?: string;
 }
 
@@ -88,7 +94,7 @@ export default function WorkCaseContent({
             {/* ─── HERO SECTION ─── */}
             <section className="relative min-h-[80vh] flex flex-col justify-center pl-16 pr-6 md:px-[8rem] pt-[15vh] pb-16">
                 {/* Background number */}
-                <div className="absolute right-[5vw] top-[10%] md:top-[20%] font-monument text-white/[0.03] text-[35vw] md:text-[25vw] font-bold leading-none pointer-events-none select-none z-0">
+                <div className="absolute right-[5vw] top-[10%] md:top-[20%] font-monument text-white/[0.03] text-[35vw] md:text-[25vw] font-bold leading-none pointer-events-none select-none z-0 will-change-transform">
                     {study.number}
                 </div>
 
@@ -97,7 +103,7 @@ export default function WorkCaseContent({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.2 }}
-                    className="flex items-center gap-3 mb-8 relative z-10"
+                    className="flex items-center gap-3 mb-8 relative z-10 will-change-[transform,opacity]"
                 >
                     <span className="text-brand-orange text-[10px] md:text-[11px] font-monument font-bold tracking-[3px] uppercase">
                         {study.category}
@@ -113,7 +119,7 @@ export default function WorkCaseContent({
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, delay: 0.3 }}
-                    className="font-monument font-bold text-[15vw] md:text-[9vw] uppercase leading-[0.85] tracking-tight text-white relative z-10 mb-8"
+                    className="font-monument font-bold text-[15vw] md:text-[9vw] uppercase leading-[0.85] tracking-tight text-white relative z-10 mb-8 will-change-[transform,opacity]"
                 >
                     {study.name.split(" ").map((word, i) => (
                         <div key={i}>{word}</div>
@@ -134,14 +140,14 @@ export default function WorkCaseContent({
             {/* ─── MAIN SLIDESHOW SECTION ─── */}
             <section className="relative w-full min-h-screen py-24 md:py-32 pl-14 pr-6 md:px-[8rem] flex items-center overflow-hidden">
                 {/* SUBTLE BACKGROUND IMAGE */}
-                <div 
-                    className="absolute inset-0 z-0 pointer-events-none"
-                    style={{ 
-                        backgroundImage: `url(${study.bgImage || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=2000'})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                    }}
-                >
+                <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+                    <Image
+                        src={study.bgImage || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=2000'}
+                        alt="Background"
+                        fill
+                        className="object-cover opacity-20 filter grayscale blur-[10px] scale-110"
+                        priority
+                    />
                     <div className="absolute inset-0 bg-[#0D0D0D] opacity-[0.94]" />
                     <div className="absolute inset-0 bg-gradient-to-b from-[#15110f] via-transparent to-[#0D0D0D]" />
                 </div>
@@ -156,6 +162,7 @@ export default function WorkCaseContent({
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.8 }}
+                            className="will-change-[transform,opacity]"
                         >
                             <div className="w-12 h-[2px] bg-brand-orange mb-8" />
                             <h2 className="text-white text-[20px] md:text-[24px] lg:text-[28px] leading-[1.2] tracking-tight font-monument uppercase">
@@ -214,16 +221,18 @@ export default function WorkCaseContent({
                                 animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
                                 exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
                                 transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                                className="absolute inset-0 w-full h-full"
+                                className="absolute inset-0 w-full h-full will-change-[transform,opacity,filter]"
                                 drag="x"
                                 dragConstraints={{ left: 0, right: 0 }}
                                 onDragEnd={handleDragEnd}
                             >
                                 {study.media[currentIndex].type === "image" ? (
-                                    <img
+                                    <Image
                                         src={study.media[currentIndex].src}
-                                        alt={study.media[currentIndex].caption}
-                                        className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-1000"
+                                        alt={study.media[currentIndex].caption || ''}
+                                        fill
+                                        className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-1000 will-change-transform"
+                                        priority
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-black relative">

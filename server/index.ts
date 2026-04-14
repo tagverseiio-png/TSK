@@ -11,6 +11,7 @@ import bookingsRoutes from "./routes/bookings";
 import studioConfigRoutes from "./routes/studioConfig";
 import availabilityRoutes from "./routes/availability";
 import clientsRoutes from "./routes/clients";
+import servicesRoutes from "./routes/services";
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 4000;
@@ -52,6 +53,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // ─── Static media files ───────────────────────────────────────────────────────
 // Serve uploaded images/videos at http://localhost:4000/uploads/...
+app.use("/uploads/services", express.static(path.join(__dirname, "uploads/services")));
 app.use(
   "/uploads",
   express.static(path.join(__dirname, "uploads"), {
@@ -73,6 +75,7 @@ app.use("/api/bookings", bookingsRoutes);
 app.use("/api/studio-config", studioConfigRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/clients", clientsRoutes);
+app.use("/api/services", servicesRoutes);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {

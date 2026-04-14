@@ -5,12 +5,13 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { isLoggedIn, logout } from "@/lib/adminApi";
 import {
-  LayoutDashboard, Film, CalendarCheck, Settings, LogOut, Menu, X, Users
+  LayoutDashboard, Film, CalendarCheck, Settings, LogOut, Menu, X, Users, Layers
 } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/works", label: "Works", icon: Film },
+  { href: "/admin/services", label: "Services", icon: Layers },
   { href: "/admin/clients", label: "Clients", icon: Users },
   { href: "/admin/bookings", label: "Bookings", icon: CalendarCheck },
   { href: "/admin/settings", label: "Settings", icon: Settings },

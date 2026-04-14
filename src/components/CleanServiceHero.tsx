@@ -2,6 +2,8 @@
 
 import { motion } from "framer-motion";
 
+import Image from "next/image";
+
 interface CleanServiceHeroProps {
     title: string;
     bio: string;
@@ -13,10 +15,13 @@ export default function CleanServiceHero({ title, bio, number }: CleanServiceHer
         <div className="relative min-h-[90vh] flex flex-col items-center justify-center px-6 py-24 text-center overflow-hidden">
             {/* Subtle Watermark Background */}
             <div className="absolute inset-0 flex items-center justify-center z-0 pointer-events-none opacity-5">
-                <img 
+                <Image 
                     src="/IMG-20250512-WA0018-removebg-preview.png" 
                     alt="Watermark" 
-                    className="w-[80vw] h-auto object-contain invert"
+                    width={1000}
+                    height={1000}
+                    className="w-[80vw] h-auto object-contain invert will-change-transform"
+                    priority
                 />
             </div>
 

@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
       { protocol: 'http', hostname: 'localhost', port: '4000' },
       { protocol: 'https', hostname: 'tskapi.t4gverse.com' },
       { protocol: 'https', hostname: 'tsk-alpha.vercel.app' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
     ],
-    unoptimized: true, // Optional: if you want to skip Next.js optimization for simple serving
   },
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 interface RosterItem {
@@ -34,7 +35,7 @@ export default function RosterList({ items, basePath, pageLabel, subline }: Rost
                     className="pt-[22vh] md:pt-[28vh] pb-16 md:pb-24 px-6 md:px-[5rem] relative z-30"
                 >
                     <div className="flex items-end gap-4 md:gap-6 mb-6">
-                        <h1 className="font-monument font-bold text-[10vw] md:text-[6vw] uppercase leading-[0.9] tracking-tight text-white">
+                        <h1 className="font-monument font-bold text-[10vw] md:text-[6vw] uppercase leading-[0.9] tracking-tight text-white will-change-[transform,opacity]">
                             {pageLabel}
                         </h1>
                         <div className="hidden md:block w-[8rem] h-[1px] bg-brand-orange mb-[1.2vw]" />
@@ -55,7 +56,14 @@ export default function RosterList({ items, basePath, pageLabel, subline }: Rost
 
                 {/* Fixed Logo in center */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#15110f] px-4 md:px-6">
-                    <img src="/IMG-20250512-WA0012-removebg-preview.png" alt="TSK Logo" className="w-[6rem] md:w-[8rem] h-auto invert" />
+                    <Image 
+                        src="/IMG-20250512-WA0012-removebg-preview.png" 
+                        alt="TSK Logo" 
+                        width={200}
+                        height={200}
+                        className="w-[6rem] md:w-[8rem] h-auto invert will-change-transform" 
+                        priority
+                    />
                 </div>
             </div>
 
@@ -86,7 +94,7 @@ function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
             )}
 
             {/* Index number on the left */}
-            <div className="absolute left-6 md:left-[5rem] top-1/2 -translate-y-1/2 font-monument text-white/10 text-[8vw] md:text-[5vw] font-bold z-10 pointer-events-none">
+            <div className="absolute left-6 md:left-[5rem] top-1/2 -translate-y-1/2 font-monument text-white/10 text-[8vw] md:text-[5vw] font-bold z-10 pointer-events-none transition-colors duration-500 will-change-transform">
                 {String(index + 1).padStart(2, "0")}
             </div>
 
@@ -97,7 +105,7 @@ function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
                 </div>
             )}
 
-            <div className="flex flex-col items-center justify-center font-monument font-bold tracking-[0.5px] uppercase leading-[1.1] md:leading-[0.95] text-[8vw] md:text-[6.5vw] text-zinc-300 group-hover:text-white transition-colors duration-300 relative z-20">
+            <div className="flex flex-col items-center justify-center font-monument font-bold tracking-[0.5px] uppercase leading-[1.1] md:leading-[0.95] text-[8vw] md:text-[6.5vw] text-zinc-300 group-hover:text-white transition-colors duration-300 relative z-20 will-change-colors">
                 <div>{item.firstName}</div>
                 {item.lastName && <div>{item.lastName}</div>}
             </div>
@@ -113,7 +121,13 @@ function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
 
             {/* Hover Image Reveal */}
             <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden mix-blend-screen z-10 w-full h-full">
-                <img src={item.image} alt={item.firstName} className="w-[60%] md:w-[35%] h-auto object-cover blur-[2px] filter grayscale opacity-[0.15] transition-all duration-700 ease-out" />
+                <Image 
+                    src={item.image} 
+                    alt={item.firstName} 
+                    fill
+                    sizes="50vw"
+                    className="w-[60%] md:w-[35%] h-auto object-cover blur-[2px] filter grayscale opacity-[0.15] transition-all duration-700 ease-out will-change-transform" 
+                />
             </div>
         </div>
     );

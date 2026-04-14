@@ -6,8 +6,9 @@ import fs from "fs";
 // Ensure uploads directories exist
 const WORKS_DIR = path.join(__dirname, "../uploads/works");
 const CLIENTS_DIR = path.join(__dirname, "../uploads/clients");
+const SERVICES_DIR = path.join(__dirname, "../uploads/services");
 
-[WORKS_DIR, CLIENTS_DIR].forEach(dir => {
+[WORKS_DIR, CLIENTS_DIR, SERVICES_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
@@ -15,7 +16,10 @@ const CLIENTS_DIR = path.join(__dirname, "../uploads/clients");
 
 const storage = multer.diskStorage({
   destination: (req, _file, cb) => {
-    const folder = req.headers['x-upload-folder'] === 'clients' ? CLIENTS_DIR : WORKS_DIR;
+    const xFolder = req.headers['x-upload-folder'];
+    let folder = WORKS_DIR;
+    if (xFolder === 'clients') folder = CLIENTS_DIR;
+    else if (xFolder === 'services') folder = SERVICES_DIR;
     cb(null, folder);
   },
   filename: (_req, file, cb) => {
