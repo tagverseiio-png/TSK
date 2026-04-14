@@ -61,5 +61,10 @@ export async function uploadServiceMedia(file: File) {
     });
     
     if (!res.ok) throw new Error('Upload failed');
-    return res.json();
+    const data = await res.json();
+    // Fix localhost URLs returned by the backend
+    if (data.url && (data.url.includes('localhost') || data.url.includes('127.0.0.1'))) {
+        data.url = data.url.replace(/http:\/\/(?:localhost|127\.0\.0\.1):\d+/, API_BASE);
+    }
+    return data;
 }

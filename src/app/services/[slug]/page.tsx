@@ -23,12 +23,27 @@ export default function ServicePage() {
     const [service, setService] = useState<ServiceData | null>(null);
     const [loading, setLoading] = useState(true);
 
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+
+    // Fix URLs stored as localhost in the DB (happens when SERVER_URL isn't set on prod)
+    const fixUrl = (url?: string) => {
+        if (!url) return '';
+        if (url.includes('localhost') || url.includes('127.0.0.1')) {
+            return url.replace(/http:\/\/(?:localhost|127\.0\.0\.1):\d+/, API_URL);
+        }
+        return url;
+    };
+
     useEffect(() => {
         const fetchService = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/services/${slug}`);
+                const res = await fetch(`${API_URL}/api/services/${slug}`);
                 if (res.ok) {
                     const data = await res.json();
+                    // Fix media URL before setting state
+                    if (data.mediaUrl) {
+                        data.mediaUrl = fixUrl(data.mediaUrl);
+                    }
                     setService(data);
                 }
             } catch (err) {
@@ -100,11 +115,10 @@ export default function ServicePage() {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <Image 
+                                <img 
                                     src={service.mediaUrl} 
                                     alt={service.title} 
-                                    fill 
-                                    className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
+                                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
                                 />
                             )
                         ) : (
