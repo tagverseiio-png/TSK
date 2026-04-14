@@ -102,4 +102,39 @@ export function updateStudioConfig(data: object) {
   return apiFetch<any>("/api/studio-config", { method: "PUT", body: JSON.stringify(data) });
 }
 
+// ── Clients ───────────────────────────────────────────────────────────────────
+export function getClients() {
+  return apiFetch<any[]>("/api/clients");
+}
+
+export function createClient(data: object) {
+  return apiFetch<any>("/api/clients", { method: "POST", body: JSON.stringify(data) });
+}
+
+export function updateClient(id: string, data: object) {
+  return apiFetch<any>(`/api/clients/${id}`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export function deleteClient(id: string) {
+  return apiFetch<any>(`/api/clients/${id}`, { method: "DELETE" });
+}
+
+export async function uploadClientLogo(file: File): Promise<{ url: string; filename: string }> {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch(`${API_BASE}/api/clients/upload-logo`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      "x-upload-folder": "clients",
+    },
+    body: formData,
+  });
+
+  if (!res.ok) throw new Error("Logo upload failed");
+  return res.json();
+}
+
 export { API_BASE };

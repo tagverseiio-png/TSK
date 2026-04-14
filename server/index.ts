@@ -10,6 +10,7 @@ import worksRoutes from "./routes/works";
 import bookingsRoutes from "./routes/bookings";
 import studioConfigRoutes from "./routes/studioConfig";
 import availabilityRoutes from "./routes/availability";
+import clientsRoutes from "./routes/clients";
 
 const app = express();
 const PORT = process.env.SERVER_PORT || 4000;
@@ -56,6 +57,7 @@ app.use("/api/works", worksRoutes);
 app.use("/api/bookings", bookingsRoutes);
 app.use("/api/studio-config", studioConfigRoutes);
 app.use("/api/availability", availabilityRoutes);
+app.use("/api/clients", clientsRoutes);
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get("/health", (_req, res) => {

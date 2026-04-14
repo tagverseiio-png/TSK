@@ -20,11 +20,11 @@ export default function WorkBonus() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${API_BASE}/api/studio-config`)
+        fetch(`${API_BASE}/api/clients`)
             .then(res => res.json())
             .then(data => {
-                if (data.clientLogos && data.clientLogos.length > 0) {
-                    const fixedLogos = data.clientLogos.map((url: string) => url.replace(/^http:\/\/localhost:\d+/, API_BASE));
+                if (Array.isArray(data) && data.length > 0) {
+                    const fixedLogos = data.map((c: any) => c.logo.replace(/^http:\/\/localhost:\d+/, API_BASE));
                     setLogos(fixedLogos);
                 } else {
                     setLogos(PLACEHOLDER_LOGOS);
