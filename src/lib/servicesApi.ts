@@ -1,5 +1,10 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
+function getToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('tsk_admin_token');
+}
+
 export async function getServices() {
     const res = await fetch(`${API_BASE}/api/services`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch services');
@@ -13,7 +18,7 @@ export async function getServiceBySlug(slug: string) {
 }
 
 export async function saveService(payload: any) {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const res = await fetch(`${API_BASE}/api/services`, {
         method: 'POST',
         headers: {
@@ -30,7 +35,7 @@ export async function saveService(payload: any) {
 }
 
 export async function deleteService(id: string) {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const res = await fetch(`${API_BASE}/api/services/${id}`, {
         method: 'DELETE',
         headers: {
@@ -42,7 +47,7 @@ export async function deleteService(id: string) {
 }
 
 export async function uploadServiceMedia(file: File) {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const formData = new FormData();
     formData.append('file', file);
     
