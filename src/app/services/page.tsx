@@ -15,7 +15,15 @@ async function getServices() {
       .sort({ count: 1 })
       .toArray();
 
-    const fixUrl = (url?: string) => url ? url.replace(/^http:\/\/localhost:\/d+/, process.env.NEXT_PUBLIC_API_URL || 'https://tsk-alpha.vercel.app') : '';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tskapi.t4gverse.com';
+    const fixUrl = (url?: string) => {
+      if (!url) return '';
+      return url
+        .replace(/^http:\/\/localhost:\/d+/, apiUrl)
+        .replace(/^http:\/\/localhost:\/d+/, apiUrl)
+        .replace(/^http:\/\/localhost:4000/, apiUrl)
+        .replace(/^http:\/\/localhost:/, apiUrl);
+    };
 
     return docs.map((doc) => ({
       id: doc._id.toString(),

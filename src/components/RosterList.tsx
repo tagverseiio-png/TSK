@@ -119,16 +119,18 @@ function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
                 {item.count}
             </div>
 
-            {/* Hover Image Reveal */}
-            <div className="absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden mix-blend-screen z-10 w-full h-full">
+{/* Hover Image Reveal */}
+            {item.image && item.image.trim() && (
+            <div className='absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden mix-blend-screen z-10 w-full h-full'>
                 <Image 
                     src={item.image} 
                     alt={item.firstName} 
                     fill
-                    sizes="50vw"
-                    className="w-[60%] md:w-[35%] h-auto object-cover blur-[2px] filter grayscale opacity-[0.15] transition-all duration-700 ease-out will-change-transform" 
+                    sizes='50vw'
+                    className='w-[60%] md:w-[35%] h-auto object-cover blur-[2px] filter grayscale opacity-[0.15] transition-all duration-700 ease-out will-change-transform' 
                 />
             </div>
+            )}
         </div>
     );
 }

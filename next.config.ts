@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
     remotePatterns: [
-      { protocol: 'http', hostname: 'localhost', port: '4000' },
+      { protocol: 'http', hostname: 'localhost' },
       { protocol: 'https', hostname: 'tskapi.t4gverse.com' },
       { protocol: 'https', hostname: 'tsk-alpha.vercel.app' },
       { protocol: 'https', hostname: 'images.unsplash.com' },
