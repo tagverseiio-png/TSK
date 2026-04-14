@@ -138,9 +138,9 @@ export default function ServicePage() {
                 </div>
             </div>
 
-            {/* Background Decorations */}
-            <div className="fixed top-0 right-0 w-1/2 h-full bg-brand-orange/5 blur-[150px] pointer-events-none z-0" />
-            <div className="fixed bottom-0 left-0 w-1/3 h-1/2 bg-white/5 blur-[120px] pointer-events-none z-0" />
+            {/* Background Decorations - Optimized using radial-gradients to avoid heavy blur computation */}
+            <div className="fixed top-0 right-0 w-1/2 h-full bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
+            <div className="fixed bottom-0 left-0 w-1/3 h-1/2 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
         </div>
     );
 }

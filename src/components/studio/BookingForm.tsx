@@ -151,7 +151,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
       {/* Form Container */}
       <div className="bg-[#0a0a0a]/80 backdrop-blur-2xl rounded-3xl border border-white/5 shadow-2xl overflow-hidden relative min-h-[500px]">
         {/* Glow effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-brand-orange/10 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[300px] h-[300px] bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.1)_0%,transparent_70%)] rounded-full pointer-events-none" />
 
         <form onSubmit={handleSubmit} className="p-6 md:p-12 h-full flex flex-col">
           <AnimatePresence mode="wait">

@@ -145,7 +145,7 @@ export default function WorkCaseContent({
                         src={study.bgImage || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=2000'}
                         alt="Background"
                         fill
-                        className="object-cover opacity-20 filter grayscale blur-[10px] scale-110"
+                        className="object-cover opacity-[0.10] filter grayscale scale-110"
                         priority
                     />
                     <div className="absolute inset-0 bg-[#0D0D0D] opacity-[0.94]" />

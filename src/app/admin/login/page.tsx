@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
       {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-orange/5 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.05)_0%,transparent_70%)] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}

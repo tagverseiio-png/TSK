@@ -50,7 +50,7 @@ export default async function StudioBookingPage() {
       
       {/* Decorative dark element */}
       <div className="absolute top-0 left-0 w-full h-[60vh] bg-gradient-to-b from-brand-orange/5 to-transparent pointer-events-none" />
-      <div className="absolute top-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-brand-orange/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute top-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.1)_0%,transparent_70%)] rounded-full pointer-events-none" />
 
       <div className="pt-32 pb-24 px-4 md:px-8">
         <BookingForm config={config} />
