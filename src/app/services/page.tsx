@@ -18,11 +18,9 @@ async function getServices() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://tskapi.t4gverse.com';
     const fixUrl = (url?: string) => {
       if (!url) return '';
-      if (url.includes('localhost:4000')) {
-        return url.replace('http://localhost:4000', apiUrl);
-      }
-      if (url.includes('localhost')) {
-        return url.replace('http://localhost', apiUrl);
+      // Handle localhost URLs (dev) or any incorrect server URLs
+      if (url.includes('localhost') || url.includes('127.0.0.1')) {
+        return url.replace(/http:\/\/[^/]+/, apiUrl);
       }
       return url;
     };
