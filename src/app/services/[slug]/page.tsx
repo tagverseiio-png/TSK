@@ -73,7 +73,7 @@ export default function ServicePage() {
                         Back to Services
                     </Link>
                     <span className="font-monument text-brand-orange text-[12px] tracking-[4px] uppercase mb-4 block">Service {service.number}</span>
-                    <h1 className="font-monument text-5xl md:text-7xl lg:text-[7vw] leading-none uppercase mb-8">
+                    <h1 className="font-monument text-2xl sm:text-4xl md:text-7xl lg:text-[7vw] leading-[1.2] uppercase mb-8 break-words overflow-hidden">
                         {service.title}
                     </h1>
                     <p className="text-white/60 text-lg md:text-xl leading-relaxed max-w-3xl font-light tracking-wide">
