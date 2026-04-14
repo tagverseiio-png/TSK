@@ -49,23 +49,6 @@ export default function RosterList({ items, basePath, pageLabel, subline }: Rost
                 </motion.div>
             )}
 
-            {/* Fixed Central Line & Orange Star Overlay */}
-            <div className="fixed top-1/2 left-0 w-full z-40 pointer-events-none -translate-y-1/2">
-                {/* Horizontal line */}
-                <div className="w-full h-[1px] bg-white/20 absolute top-1/2 left-0 -translate-y-1/2" />
-
-                {/* Fixed Logo in center */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#15110f] px-4 md:px-6">
-                    <Image 
-                        src="/IMG-20250512-WA0012-removebg-preview.png" 
-                        alt="TSK Logo" 
-                        width={200}
-                        height={200}
-                        className="w-[6rem] md:w-[8rem] h-auto invert will-change-transform" 
-                        priority
-                    />
-                </div>
-            </div>
 
             {/* Static Sub-container */}
             <div className="w-full relative z-30 pt-[5vh] pb-[25vh]">
