@@ -80,39 +80,6 @@ router.post('/', requireAuth, async (req: AuthRequest, res: Response) => {
 });
 
 // ─── GET single service by slug ──────────────────────────────────────────────
-router.get('/:slug', async (req: Request, res: Response) => {
-  let client: MongoClient | null = null;
-  try {
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
-    const service = await db.collection('services').findOne({ slug: req.params.slug });
-    if (!service) return res.status(404).json({ error: 'Not found' });
-    return res.json(service);
-  } catch (err) {
-    return res.status(500).json({ error: 'Failed to fetch service' });
-  } finally {
-    await client?.close();
-  }
-});
-
-// ─── DELETE service ─────────────────────────────────────────────────────────
-router.delete('/:id', requireAuth, async (req: AuthRequest, res: Response) => {
-  let client: MongoClient | null = null;
-  try {
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
-    await db.collection('services').deleteOne({ _id: new ObjectId(req.params.id as string) });
-    return res.json({ success: true });
-  } catch (err) {
-    return res.status(500).json({ error: 'Delete failed' });
-  } finally {
-    await client?.close();
-  }
-});
-
-// ─── GET single service by slug ──────────────────────────────────────────────
 router.get("/:slug", async (req: Request, res: Response) => {
   let client: MongoClient | null = null;
   try {
@@ -123,7 +90,11 @@ router.get("/:slug", async (req: Request, res: Response) => {
     if (!service) return res.status(404).json({ error: "Not found" });
     return res.json(service);
   } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch service" });
+    console.error("Fetch service error:", err);
+    return res.status(500).json({ 
+      error: "Failed to fetch service", 
+      details: err instanceof Error ? err.message : String(err) 
+    });
   } finally {
     await client?.close();
   }
@@ -140,6 +111,7 @@ router.post(
       const url = `${BASE_URL}/uploads/services/${req.file.filename}`;
       return res.json({ url, type: req.file.mimetype.startsWith("video/") ? "video" : "image" });
     } catch (err) {
+      console.error("Upload error:", err);
       return res.status(500).json({ error: "Upload failed" });
     }
   }
@@ -176,6 +148,7 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
       return res.status(201).json({ ...doc, _id: result.insertedId });
     }
   } catch (err) {
+    console.error("Save service error:", err);
     return res.status(500).json({ error: "Operation failed" });
   } finally {
     await client?.close();
@@ -192,6 +165,7 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     await db.collection("services").deleteOne({ _id: new ObjectId(req.params.id as string) });
     return res.json({ success: true });
   } catch (err) {
+    console.error("Delete service error:", err);
     return res.status(500).json({ error: "Delete failed" });
   } finally {
     await client?.close();
