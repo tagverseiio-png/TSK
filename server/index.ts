@@ -5,6 +5,7 @@ import compression from "compression";
 import dotenv from "dotenv";
 import fs from "fs";
 
+//hi
 // Load .env.local for local dev, fall back to .env for production
 const envLocalPath = path.resolve(__dirname, "../.env.local");
 const envPath = path.resolve(__dirname, "../.env");
@@ -42,7 +43,7 @@ app.use(
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
-      
+
       if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.includes("localhost") || origin.endsWith(".thesimplekrew.com")) {
         callback(null, true);
       } else {
