@@ -10,24 +10,37 @@ import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const router = Router();
-const uri = process.env.MONGODB_URI!;
+const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB || "TSK";
 const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
+
+// Helper to get DB client
+async function getDb() {
+  if (!uri) {
+    throw new Error("MONGODB_URI is not defined");
+  }
+  const client = new MongoClient(uri);
+  await client.connect();
+  return { client, db: client.db(dbName) };
+}
 
 // ─── GET all works (public) ───────────────────────────────────────────────────
 router.get("/", async (_req: Request, res: Response) => {
   let client: MongoClient | null = null;
   try {
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { client: c, db } = await getDb();
+    client = c;
     const works = await db.collection("caseStudies").find({}).sort({ number: 1 }).toArray();
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     return res.json(works);
   } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch works" });
+    console.error("Fetch all works error:", err);
+    return res.status(500).json({ 
+      error: "Failed to fetch works",
+      details: err instanceof Error ? err.message : String(err)
+    });
   } finally {
     await client?.close();
   }
@@ -37,9 +50,8 @@ router.get("/", async (_req: Request, res: Response) => {
 router.get("/:slug", async (req: Request, res: Response) => {
   let client: MongoClient | null = null;
   try {
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { client: c, db } = await getDb();
+    client = c;
     const work = await db.collection("caseStudies").findOne({ slug: req.params.slug });
     if (!work) return res.status(404).json({ error: "Not found" });
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -47,14 +59,17 @@ router.get("/:slug", async (req: Request, res: Response) => {
     res.setHeader('Expires', '0');
     return res.json(work);
   } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch work" });
+    console.error("Fetch work by slug error:", err);
+    return res.status(500).json({ 
+      error: "Failed to fetch work",
+      details: err instanceof Error ? err.message : String(err)
+    });
   } finally {
     await client?.close();
   }
 });
 
 // ─── POST upload media files (admin) ─────────────────────────────────────────
-// Returns array of { url, type } for each uploaded file
 router.post(
   "/upload-media",
   requireAuth,
@@ -78,9 +93,7 @@ router.post(
 
             await new Promise((resolve, reject) => {
               ffmpeg(inputPath)
-                // Downscale to 1080p width max, keep aspect ratio
                 .videoFilters("scale='min(1920,iw)':-2")
-                // Instagram-style optimization: fast preset, 2500k maxrate
                 .outputOptions([
                   "-c:v libx264",
                   "-preset fast",
@@ -89,11 +102,10 @@ router.post(
                   "-bufsize 5000k",
                   "-c:a aac",
                   "-b:a 128k",
-                  "-movflags +faststart" // Enables instant playback in browser
+                  "-movflags +faststart" 
                 ])
                 .toFormat("mp4")
                 .on("end", () => {
-                  // Delete original uncompressed file to save space
                   if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
                   resolve(true);
                 })
@@ -110,14 +122,14 @@ router.post(
             filename: finalFilename,
             url: `${BASE_URL}/uploads/works/${finalFilename}`,
             originalName: f.originalname,
-            size: f.size, // Size of original
+            size: f.size,
           };
         })
       );
 
       return res.json(results);
     } catch (err) {
-      console.error("Upload error:", err);
+      console.error("Upload works media error:", err);
       return res.status(500).json({ error: "Upload failed" });
     }
   }
@@ -137,11 +149,9 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "name and slug are required" });
     }
 
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { client: c, db } = await getDb();
+    client = c;
 
-    // Check slug uniqueness
     const existing = await db.collection("caseStudies").findOne({ slug });
     if (existing) {
       return res.status(409).json({ error: "slug already exists" });
@@ -165,8 +175,11 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
     const result = await db.collection("caseStudies").insertOne(doc);
     return res.status(201).json({ ...doc, _id: result.insertedId });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Failed to create work" });
+    console.error("Create work error:", err);
+    return res.status(500).json({ 
+      error: "Failed to create work",
+      details: err instanceof Error ? err.message : String(err)
+    });
   } finally {
     await client?.close();
   }
@@ -177,9 +190,8 @@ router.put("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
   let client: MongoClient | null = null;
   try {
     const { id } = req.params;
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { client: c, db } = await getDb();
+    client = c;
 
     const updates = { ...req.body, updatedAt: new Date() };
     delete updates._id;
@@ -197,7 +209,11 @@ router.put("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     if (!result) return res.status(404).json({ error: "Not found" });
     return res.json(result);
   } catch (err) {
-    return res.status(500).json({ error: "Failed to update work" });
+    console.error("Update work error:", err);
+    return res.status(500).json({ 
+      error: "Failed to update work",
+      details: err instanceof Error ? err.message : String(err)
+    });
   } finally {
     await client?.close();
   }
@@ -208,15 +224,12 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
   let client: MongoClient | null = null;
   try {
     const { id } = req.params;
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { client: c, db } = await getDb();
+    client = c;
 
-    // Find work to get media files
     const work = await db.collection("caseStudies").findOne({ _id: new ObjectId(id as string) });
     if (!work) return res.status(404).json({ error: "Not found" });
 
-    // Delete physical media files
     if (Array.isArray(work.media)) {
       for (const item of work.media) {
         if (item.src && item.src.includes("/uploads/works/")) {
@@ -235,7 +248,11 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     await db.collection("caseStudies").deleteOne({ _id: new ObjectId(id as string) });
     return res.json({ success: true });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to delete work" });
+    console.error("Delete work error:", err);
+    return res.status(500).json({ 
+      error: "Failed to delete work",
+      details: err instanceof Error ? err.message : String(err)
+    });
   } finally {
     await client?.close();
   }
