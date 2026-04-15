@@ -3,7 +3,16 @@ import cors from "cors";
 import path from "path";
 import compression from "compression";
 import dotenv from "dotenv";
-dotenv.config({ path: path.resolve(__dirname, "../.env.local") });
+import fs from "fs";
+
+// Load .env.local for local dev, fall back to .env for production
+const envLocalPath = path.resolve(__dirname, "../.env.local");
+const envPath = path.resolve(__dirname, "../.env");
+if (fs.existsSync(envLocalPath)) {
+  dotenv.config({ path: envLocalPath });
+} else {
+  dotenv.config({ path: envPath });
+}
 
 import authRoutes from "./routes/auth";
 import worksRoutes from "./routes/works";
