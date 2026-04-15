@@ -22,6 +22,8 @@ const allowedOrigins = [
   "http://localhost:3001",
   "https://tsk-alpha.vercel.app",
   "https://tskapi.t4gverse.com",
+  "https://thesimplekrew.com",
+  "https://www.thesimplekrew.com",
   process.env.FRONTEND_URL,
   process.env.NEXT_PUBLIC_URL,
 ].filter(Boolean) as string[];
@@ -32,7 +34,7 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
       
-      if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.includes("localhost")) {
+      if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.includes("localhost") || origin.endsWith(".thesimplekrew.com")) {
         callback(null, true);
       } else {
         callback(null, false); // Block other origins
