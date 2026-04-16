@@ -20,7 +20,8 @@ export default function AdminSettingsPage() {
     reelNoSubs: 100,
     reelWithSubs: 150,
     fullPodcast: 300,
-    whatsappNumber: "",
+    whatsappNumber: "6588359374",
+    contactEmail: "admin@thesimplekrew.com",
     timeSlots: [] as string[],
     clientLogos: [] as string[],
   });

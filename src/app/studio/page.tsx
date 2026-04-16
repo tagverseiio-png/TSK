@@ -16,15 +16,15 @@ async function getStudioConfig() {
     const config = await db.collection("studioConfig").findOne({});
     if (!config) throw new Error("No studio config found");
     return {
-      baseRate: config.baseRate as number,
-      minHours: config.minHours as number,
-      videoCoverage: config.videoCoverage as number,
-      reelNoSubs: config.reelNoSubs as number,
-      reelWithSubs: config.reelWithSubs as number,
-      fullPodcast: config.fullPodcast as number,
-      whatsappNumber: config.whatsappNumber as string,
-      contactEmail: config.contactEmail as string || "admin@thesimplekrew.com",
-      timeSlots: config.timeSlots as string[],
+      baseRate: config.baseRate || 80,
+      minHours: config.minHours || 2,
+      videoCoverage: config.videoCoverage || 200,
+      reelNoSubs: config.reelNoSubs || 100,
+      reelWithSubs: config.reelWithSubs || 150,
+      fullPodcast: config.fullPodcast || 300,
+      whatsappNumber: config.whatsappNumber || "6588359374",
+      contactEmail: config.contactEmail || "admin@thesimplekrew.com",
+      timeSlots: config.timeSlots || ["10:00 AM", "01:00 PM", "04:00 PM", "07:00 PM"],
     };
   } catch (err) {
     console.error("[studio] Failed to fetch config, using defaults:", err);
@@ -36,7 +36,7 @@ async function getStudioConfig() {
       reelNoSubs: 100,
       reelWithSubs: 150,
       fullPodcast: 300,
-      whatsappNumber: "1234567890",
+      whatsappNumber: "6588359374",
       contactEmail: "admin@thesimplekrew.com",
       timeSlots: ["10:00 AM", "01:00 PM", "04:00 PM", "07:00 PM"],
     };

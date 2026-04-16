@@ -109,7 +109,9 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
     // Construct WhatsApp Message
     const text = `*New Studio Booking Request*%0A%0A*Name:* ${formData.name}%0A*Phone:* ${formData.phone}%0A*Date:* ${formData.date}%0A*Time:* ${formData.startTime}%0A*Duration:* ${formData.duration} Hours%0A%0A*Packages Selected:*%0A- Studio Rental (${formData.duration}hrs)%0A- Video Coverage: ${formData.videoCoverage ? "Yes" : "No"}%0A- Reels (No Subs): ${formData.reelsNoSubs}%0A- Reels (With Subs): ${formData.reelsWithSubs}%0A- Full Podcast Edit: ${formData.fullPodcast}%0A%0A*Total Estimate:* $${totalPrice}`;
 
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${text}`;
+    // Clean number: remove any non-digit chars (spaces, +, -, etc)
+    const cleanNumber = whatsappNumber.replace(/\D/g, "");
+    const whatsappUrl = `https://wa.me/${cleanNumber}?text=${text}`;
     setSubmitting(false);
     window.open(whatsappUrl, "_blank");
   };
@@ -145,7 +147,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
               <div className="w-8 h-8 rounded-full bg-brand-orange/10 flex items-center justify-center group-hover:bg-brand-orange group-hover:text-black transition-all">
                 <Send size={14} />
               </div>
-              <span className="font-monument text-[10px] tracking-widest uppercase">WhatsApp: +{whatsappNumber}</span>
+              <span className="font-monument text-[10px] tracking-widest uppercase truncate max-w-[150px] sm:max-w-none">WhatsApp: {whatsappNumber}</span>
            </a>
            <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 text-brand-orange hover:text-white transition-colors group">
               <div className="w-8 h-8 rounded-full bg-brand-orange/10 flex items-center justify-center group-hover:bg-brand-orange group-hover:text-black transition-all">
