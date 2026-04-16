@@ -323,18 +323,20 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                 </div>
                 
                 <div className="space-y-4">
-                  <label className="flex items-center justify-between p-6 rounded-2xl border transition-all cursor-pointer group bg-gradient-to-r from-white/5 to-transparent hover:from-white/10 hover:border-brand-orange/50">
-                    <div className="flex items-center gap-6">
-                      <div className={`p-4 rounded-xl flex items-center justify-center transition-all ${formData.videoCoverage ? 'bg-brand-orange text-black shadow-lg shadow-brand-orange/20 scale-110' : 'bg-white/5 text-white'}`}>
-                        <Video size={28} />
+                  <label className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl border transition-all cursor-pointer group bg-gradient-to-r from-white/5 to-transparent hover:from-white/10 hover:border-brand-orange/50 gap-4">
+                    <div className="flex items-center gap-4 sm:gap-6">
+                      <div className={`p-3 sm:p-4 rounded-xl flex items-center justify-center transition-all ${formData.videoCoverage ? 'bg-brand-orange text-black shadow-lg shadow-brand-orange/20 scale-110' : 'bg-white/5 text-white'}`}>
+                        <Video size={24} className="sm:w-[28px] sm:h-[28px]" />
                       </div>
                       <div>
-                        <h4 className="font-monument text-xl text-white group-hover:text-brand-orange transition-colors">Video Coverage</h4>
-                        <p className="text-sm text-white/50 mt-1">Multi-camera setup, Lighting, &amp; Technical Operator</p>
+                        <h4 className="font-monument text-lg sm:text-xl text-white group-hover:text-brand-orange transition-colors">Video Coverage</h4>
+                        <p className="text-xs sm:text-sm text-white/50 mt-1">Multi-camera setup, Lighting, &amp; Technical Operator</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <span className="font-monument text-xl text-brand-orange/90">+${videoCoverage}<span className="text-sm text-white/40">/hr</span></span>
+                    <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-6 sm:gap-8 pt-4 sm:pt-0 border-t border-white/5 sm:border-t-0">
+                      <span className="font-monument text-lg sm:text-xl text-brand-orange/90">
+                        +${videoCoverage}<span className="text-[10px] sm:text-sm text-white/40">/hr</span>
+                      </span>
                       <div className="relative">
                         <input 
                           type="checkbox" 
@@ -343,8 +345,8 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                           onChange={handleInputChange}
                           className="w-0 h-0 opacity-0 absolute" 
                         />
-                        <div className={`w-14 h-8 rounded-full transition-colors flex items-center px-1 ${formData.videoCoverage ? 'bg-brand-orange' : 'bg-white/10'}`}>
-                          <motion.div layout className={`w-6 h-6 rounded-full bg-white shadow-md ${formData.videoCoverage ? 'ml-auto' : ''}`} />
+                        <div className={`w-12 sm:w-14 h-7 sm:h-8 rounded-full transition-colors flex items-center px-1 ${formData.videoCoverage ? 'bg-brand-orange' : 'bg-white/10'}`}>
+                          <motion.div layout className={`w-5 sm:w-6 h-5 sm:h-6 rounded-full bg-white shadow-md ${formData.videoCoverage ? 'ml-auto' : ''}`} />
                         </div>
                       </div>
                     </div>
@@ -357,15 +359,15 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                         <h4 className="font-monument text-sm text-white">Reel (No Subs)</h4>
                       </div>
                       <p className="text-xs text-white/50 mb-6 flex-1">Optimized for IG/TikTok (up to 90 seconds). Raw cut.</p>
-                      <div className="flex items-center justify-between mt-auto">
-                        <span className="text-brand-orange font-monument">+${reelNoSubs}<span className="text-[10px] text-white/40">/ea</span></span>
+                      <div className="flex items-center justify-between mt-auto gap-2">
+                        <span className="text-brand-orange font-monument text-sm whitespace-nowrap">+${reelNoSubs}<span className="text-[10px] text-white/40">/ea</span></span>
                         <input
                           type="number"
                           name="reelsNoSubs"
                           min="0"
                           value={formData.reelsNoSubs}
                           onChange={handleInputChange}
-                          className="w-20 bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-center focus:outline-none focus:border-brand-orange transition-all"
+                          className="w-16 sm:w-20 bg-black/50 border border-white/10 rounded-lg px-2 sm:px-3 py-2 text-white text-center focus:outline-none focus:border-brand-orange transition-all text-sm"
                         />
                       </div>
                     </div>
@@ -376,15 +378,15 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                         <h4 className="font-monument text-sm text-white">Reel (w/ Subs)</h4>
                       </div>
                       <p className="text-xs text-white/50 mb-6 flex-1">Optimized for IG/TikTok (up to 90 seconds). Burned-in dynamic subtitles.</p>
-                      <div className="flex items-center justify-between mt-auto">
-                        <span className="text-brand-orange font-monument">+${reelWithSubs}<span className="text-[10px] text-white/40">/ea</span></span>
+                      <div className="flex items-center justify-between mt-auto gap-2">
+                        <span className="text-brand-orange font-monument text-sm whitespace-nowrap">+${reelWithSubs}<span className="text-[10px] text-white/40">/ea</span></span>
                         <input
                           type="number"
                           name="reelsWithSubs"
                           min="0"
                           value={formData.reelsWithSubs}
                           onChange={handleInputChange}
-                          className="w-20 bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-center focus:outline-none focus:border-brand-orange transition-all"
+                          className="w-16 sm:w-20 bg-black/50 border border-white/10 rounded-lg px-2 sm:px-3 py-2 text-white text-center focus:outline-none focus:border-brand-orange transition-all text-sm"
                         />
                       </div>
                     </div>
@@ -395,15 +397,15 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                         <h4 className="font-monument text-sm text-white">Full Podcast Edit</h4>
                       </div>
                       <p className="text-xs text-white/50 mb-6 flex-1">Multi-cam switching, color correction, audio mastering. Final output ready for YouTube.</p>
-                      <div className="flex items-center justify-between mt-auto">
-                        <span className="text-brand-orange font-monument">+${fullPodcast}<span className="text-[10px] text-white/40">/ep</span></span>
+                      <div className="flex items-center justify-between mt-auto gap-2">
+                        <span className="text-brand-orange font-monument text-sm whitespace-nowrap">+${fullPodcast}<span className="text-[10px] text-white/40">/ep</span></span>
                         <input
                           type="number"
                           name="fullPodcast"
                           min="0"
                           value={formData.fullPodcast}
                           onChange={handleInputChange}
-                          className="w-20 bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-white text-center focus:outline-none focus:border-brand-orange transition-all"
+                          className="w-16 sm:w-20 bg-black/50 border border-white/10 rounded-lg px-2 sm:px-3 py-2 text-white text-center focus:outline-none focus:border-brand-orange transition-all text-sm"
                         />
                       </div>
                     </div>
@@ -420,19 +422,19 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                 </div>
                 
                 <div className="bg-white/5 rounded-2xl p-6 border border-white/10 divide-y divide-white/10">
-                  <div className="py-4 flex justify-between items-center">
-                    <span className="text-white/50 uppercase tracking-widest text-xs">For</span>
-                    <span className="text-white font-monument text-lg">{formData.name}</span>
+                  <div className="py-4 flex justify-between items-center gap-4">
+                    <span className="text-white/50 uppercase tracking-widest text-[10px] sm:text-xs shrink-0">For</span>
+                    <span className="text-white font-monument text-sm sm:text-lg text-right break-words">{formData.name}</span>
                   </div>
-                  <div className="py-4 flex justify-between items-center">
-                    <span className="text-white/50 uppercase tracking-widest text-xs">Contact</span>
-                    <span className="text-white text-lg">{formData.phone}</span>
+                  <div className="py-4 flex justify-between items-center gap-4">
+                    <span className="text-white/50 uppercase tracking-widest text-[10px] sm:text-xs shrink-0">Contact</span>
+                    <span className="text-white text-sm sm:text-lg text-right break-words">{formData.phone}</span>
                   </div>
-                  <div className="py-4 flex justify-between items-center">
-                    <span className="text-white/50 uppercase tracking-widest text-xs">When</span>
+                  <div className="py-4 flex justify-between items-center gap-4">
+                    <span className="text-white/50 uppercase tracking-widest text-[10px] sm:text-xs shrink-0">When</span>
                     <div className="text-right">
-                      <div className="text-brand-orange font-monument text-lg">{formData.date} at {formData.startTime}</div>
-                      <div className="text-white/50 text-sm">{formData.duration} Hours</div>
+                      <div className="text-brand-orange font-monument text-sm sm:text-lg">{formData.date} at {formData.startTime}</div>
+                      <div className="text-white/50 text-xs sm:text-sm">{formData.duration} Hours</div>
                     </div>
                   </div>
                   <div className="py-4">
@@ -456,30 +458,30 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                   </div>
                 </div>
 
-                <div className="bg-brand-orange/10 border border-brand-orange/30 rounded-2xl p-6 flex items-center justify-between shadow-[0_0_30px_rgba(255,107,0,0.1)]">
+                <div className="bg-brand-orange/10 border border-brand-orange/30 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_30px_rgba(255,107,0,0.1)]">
                   <span className="text-brand-orange uppercase tracking-widest text-sm font-bold">Estimated Total</span>
-                  <span className="font-monument text-4xl text-brand-white">${totalPrice}</span>
+                  <span className="font-monument text-3xl sm:text-4xl text-brand-white">${totalPrice}</span>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
           {/* Navigation Buttons footer */}
-          <div className="mt-auto pt-8 flex items-center justify-between border-t border-white/5">
+          <div className="mt-auto pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/5">
             <button
               type="button"
               onClick={prevStep}
-              className={`flex items-center gap-2 text-white/50 hover:text-brand-orange transition-colors font-monument uppercase text-xs tracking-widest px-4 py-3 ${step === 1 ? 'opacity-0 pointer-events-none' : ''}`}
+              className={`flex items-center gap-2 text-white/50 hover:text-brand-orange transition-colors font-monument uppercase text-[10px] tracking-widest px-4 py-2 sm:py-3 ${step === 1 ? 'opacity-0 pointer-events-none' : ''}`}
             >
-              <ArrowLeft size={16} /> Back
+              <ArrowLeft size={16} /> <span className="hidden sm:inline">Back</span><span className="sm:hidden">Back</span>
             </button>
             <button
               type="submit"
               disabled={isNextDisabled() || submitting}
-              className="bg-brand-orange hover:bg-orange-500 text-black px-8 py-4 rounded-full font-monument uppercase tracking-wider flex items-center gap-3 transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:pointer-events-none"
+              className="w-full sm:w-auto bg-brand-orange hover:bg-orange-500 text-black px-4 sm:px-8 py-4 rounded-full font-monument uppercase tracking-wider flex items-center justify-center gap-2 sm:gap-3 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:hover:scale-100 disabled:pointer-events-none text-[9px] sm:text-xs min-h-[50px] sm:min-h-[56px]"
             >
-              {submitting ? "Saving..." : step === 4 ? "Confirm via WhatsApp" : "Next Step"}
-              {step === 4 ? <Send size={18} /> : <ArrowRight size={18} />}
+              <span className="whitespace-nowrap">{submitting ? "Saving..." : step === 4 ? "Confirm via WhatsApp" : "Next Step"}</span>
+              {step === 4 ? <Send size={14} className="sm:w-[18px] sm:h-[18px]" /> : <ArrowRight size={14} className="sm:w-[18px] sm:h-[18px]" />}
             </button>
           </div>
         </form>
