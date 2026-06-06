@@ -51,7 +51,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
       .then((d) => {
         const locked = d.lockedSlots || [];
         setLockedSlots(locked);
-        
+
         // If current startTime is locked, or if startTime is not selected, try to find first available
         if (!formData.startTime || locked.includes(formData.startTime)) {
           const firstAvailable = timeSlots.find(s => !locked.includes(s));
@@ -65,7 +65,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (type === "checkbox") {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev) => ({ ...prev, [name]: checked }));
@@ -140,38 +140,21 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
         <p className="text-white/60 text-lg max-w-2xl mx-auto">
           Reserve your slot for our premium podcast studio. Review the packages and hit book to finalize over WhatsApp.
         </p>
-        
-        {/* Added Contact Details Block */}
-        <div className="mt-6 flex flex-wrap justify-center gap-6 md:gap-12">
-           <a href={`https://wa.me/${whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-brand-orange hover:text-white transition-colors group">
-              <div className="w-8 h-8 rounded-full bg-brand-orange/10 flex items-center justify-center group-hover:bg-brand-orange group-hover:text-black transition-all">
-                <Send size={14} />
-              </div>
-              <span className="font-monument text-[10px] tracking-widest uppercase truncate max-w-[150px] sm:max-w-none">WhatsApp: {whatsappNumber}</span>
-           </a>
-           <a href={`mailto:${contactEmail}`} className="flex items-center gap-2 text-brand-orange hover:text-white transition-colors group">
-              <div className="w-8 h-8 rounded-full bg-brand-orange/10 flex items-center justify-center group-hover:bg-brand-orange group-hover:text-black transition-all">
-                <Users size={14} />
-              </div>
-              <span className="font-monument text-[10px] tracking-widest uppercase">Email: {contactEmail}</span>
-           </a>
-        </div>
       </div>
 
       {/* Progress Indicator */}
       <div className="flex items-center justify-between mb-12 relative max-w-2xl mx-auto">
         <div className="absolute top-1/2 left-0 w-full h-[1px] bg-white/10 -z-10 -translate-y-1/2"></div>
-        <div 
+        <div
           className="absolute top-1/2 left-0 h-[2px] bg-brand-orange -z-10 -translate-y-1/2 transition-all duration-500 ease-in-out"
           style={{ width: `${((step - 1) / (STEPS.length - 1)) * 100}%` }}
         ></div>
-        
+
         {STEPS.map((s) => (
           <div key={s.id} className="flex flex-col items-center gap-2">
-            <div 
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-monument text-sm transition-all duration-300 ${
-                step >= s.id ? "bg-brand-orange text-black shadow-[0_0_20px_rgba(255,107,0,0.4)]" : "bg-[#15110f] border border-white/20 text-white/40"
-              }`}
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-monument text-sm transition-all duration-300 ${step >= s.id ? "bg-brand-orange text-black shadow-[0_0_20px_rgba(255,107,0,0.4)]" : "bg-[#15110f] border border-white/20 text-white/40"
+                }`}
             >
               {step > s.id ? <CheckCircle2 size={18} /> : s.id}
             </div>
@@ -227,9 +210,9 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                 <div className="text-center mb-8">
                   <h3 className="font-monument text-2xl text-white">Choose your time</h3>
                   <p className="text-white/50 text-sm mt-2">Select a date, a slot, and total duration.</p>
-                  
+
                   {isAllSlotsFull && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-xs font-monument uppercase tracking-widest flex items-center justify-center gap-2"
@@ -238,7 +221,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                     </motion.div>
                   )}
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-6">
                     <div className="space-y-3">
@@ -256,7 +239,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                         style={{ colorScheme: "dark" }}
                       />
                     </div>
-                    
+
                     <div className="space-y-3">
                       <label className="text-[10px] text-brand-orange uppercase tracking-widest flex items-center justify-between">
                         <span>Duration (Hours)</span>
@@ -285,20 +268,19 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                       {timeSlots.map((slot) => {
                         const isBooked = lockedSlots.includes(slot);
                         const isSelected = formData.startTime === slot;
-                        
+
                         return (
                           <button
                             key={slot}
                             type="button"
                             disabled={isBooked}
                             onClick={() => !isBooked && setFormData({ ...formData, startTime: slot })}
-                            className={`py-5 px-3 rounded-xl border transition-all flex flex-col items-center justify-center gap-1 ${
-                              isBooked 
-                                ? "bg-white/5 border-white/5 text-white/20 cursor-not-allowed opacity-50" 
+                            className={`py-5 px-3 rounded-xl border transition-all flex flex-col items-center justify-center gap-1 ${isBooked
+                                ? "bg-white/5 border-white/5 text-white/20 cursor-not-allowed opacity-50"
                                 : isSelected
                                   ? "bg-brand-orange border-brand-orange text-black scale-[1.03] shadow-lg shadow-brand-orange/20 z-10"
                                   : "bg-white/5 border-white/10 text-white hover:border-brand-orange/50 hover:bg-white/10"
-                            }`}
+                              }`}
                           >
                             <span className="font-monument text-sm">{slot}</span>
                             {isBooked ? (
@@ -323,7 +305,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                   <h3 className="font-monument text-2xl text-white">Elevate your production</h3>
                   <p className="text-white/50 text-sm mt-2">Add professional video coverage and post-production edit packages.</p>
                 </div>
-                
+
                 <div className="space-y-4">
                   <label className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-6 rounded-2xl border transition-all cursor-pointer group bg-gradient-to-r from-white/5 to-transparent hover:from-white/10 hover:border-brand-orange/50 gap-4">
                     <div className="flex items-center gap-4 sm:gap-6">
@@ -340,12 +322,12 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                         +${videoCoverage}<span className="text-[10px] sm:text-sm text-white/40">/hr</span>
                       </span>
                       <div className="relative">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           name="videoCoverage"
                           checked={formData.videoCoverage}
                           onChange={handleInputChange}
-                          className="w-0 h-0 opacity-0 absolute" 
+                          className="w-0 h-0 opacity-0 absolute"
                         />
                         <div className={`w-12 sm:w-14 h-7 sm:h-8 rounded-full transition-colors flex items-center px-1 ${formData.videoCoverage ? 'bg-brand-orange' : 'bg-white/10'}`}>
                           <motion.div layout className={`w-5 sm:w-6 h-5 sm:h-6 rounded-full bg-white shadow-md ${formData.videoCoverage ? 'ml-auto' : ''}`} />
@@ -422,7 +404,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                   <h3 className="font-monument text-3xl text-brand-orange mb-2">Almost there!</h3>
                   <p className="text-white/60">Review your final booking details before confirming.</p>
                 </div>
-                
+
                 <div className="bg-white/5 rounded-2xl p-6 border border-white/10 divide-y divide-white/10">
                   <div className="py-4 flex justify-between items-center gap-4">
                     <span className="text-white/50 uppercase tracking-widest text-[10px] sm:text-xs shrink-0">For</span>
