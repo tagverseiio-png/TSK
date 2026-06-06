@@ -217,11 +217,11 @@ export default function WorkCaseContent({
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={currentIndex}
-                                initial={{ opacity: 0, scale: 1.1, filter: "blur(20px)" }}
-                                animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-                                exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+                                initial={{ opacity: 0, scale: 1.05 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                                className="absolute inset-0 w-full h-full will-change-[transform,opacity,filter]"
+                                className="absolute inset-0 w-full h-full will-change-[transform,opacity]"
                                 drag="x"
                                 dragConstraints={{ left: 0, right: 0 }}
                                 onDragEnd={handleDragEnd}

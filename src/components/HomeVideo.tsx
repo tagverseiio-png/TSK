@@ -35,13 +35,23 @@ const AUTO_ROTATE_TIME = 15; // 15 seconds when muted
 
 export default function HomeVideo() {
     const [activeIndex, setActiveIndex] = useState(0);
+    const [displayIndex, setDisplayIndex] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
     const [videoDuration, setVideoDuration] = useState(AUTO_ROTATE_TIME);
+    const [videoOpacity, setVideoOpacity] = useState(0);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     const nextVideo = () => {
         setActiveIndex((prev) => (prev + 1) % projects.length);
     };
+
+    // Fade in on initial mount
+    useEffect(() => {
+        const frame = requestAnimationFrame(() => {
+            setVideoOpacity(0.6);
+        });
+        return () => cancelAnimationFrame(frame);
+    }, []);
 
     // Auto-rotate when muted
     useEffect(() => {
@@ -52,11 +62,37 @@ export default function HomeVideo() {
         return () => clearInterval(timer);
     }, [isMuted, activeIndex]);
 
+    // Handle smooth source transitions
+    useEffect(() => {
+        if (activeIndex === displayIndex) return;
+
+        // Step 1: Fade out (asynchronously)
+        const frame = requestAnimationFrame(() => {
+            setVideoOpacity(0);
+        });
+
+        // Step 2: After fade-out, swap displayIndex to change source
+        const timer = setTimeout(() => {
+            setDisplayIndex(activeIndex);
+        }, 500); // 500ms fade-out
+
+        return () => {
+            cancelAnimationFrame(frame);
+            clearTimeout(timer);
+        };
+    }, [activeIndex, displayIndex]);
+
     useEffect(() => {
         if (videoRef.current) {
+            // Step 3: Load and play new source, then fade back in
             videoRef.current.load();
+            videoRef.current.play().catch(() => {});
+            const frame = requestAnimationFrame(() => {
+                setVideoOpacity(0.6);
+            });
+            return () => cancelAnimationFrame(frame);
         }
-    }, [activeIndex]);
+    }, [displayIndex]);
 
     const handleVideoEnd = () => {
         if (!isMuted) {
@@ -80,25 +116,19 @@ export default function HomeVideo() {
 
             {/* Background Video */}
             <div className="absolute inset-0 z-[1] w-full h-full">
-                <AnimatePresence mode="wait">
-                    <motion.video
-                        key={activeIndex}
-                        ref={videoRef}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 0.6 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.8 }}
-                        autoPlay
-                        loop={isMuted}
-                        muted={isMuted}
-                        playsInline
-                        onEnded={handleVideoEnd}
-                        onLoadedMetadata={handleLoadedMetadata}
-                        className="w-full h-full object-cover"
-                    >
-                        <source src={projects[activeIndex].video} type="video/mp4" />
-                    </motion.video>
-                </AnimatePresence>
+                <motion.video
+                    ref={videoRef}
+                    animate={{ opacity: videoOpacity }}
+                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    autoPlay
+                    loop={isMuted}
+                    muted={isMuted}
+                    playsInline
+                    onEnded={handleVideoEnd}
+                    onLoadedMetadata={handleLoadedMetadata}
+                    className="w-full h-full object-cover"
+                    src={projects[displayIndex].video}
+                />
             </div>
 
             {/* Unified Bottom Section */}
