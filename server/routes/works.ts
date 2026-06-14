@@ -89,32 +89,31 @@ router.post(
           const outputDir = path.join(__dirname, "../uploads/works");
           const hlsOutputDir = path.join(__dirname, "../uploads/works/hls", baseFilename);
 
-          const pipelineResult = await processVideoPipeline(
+          const stdFilename = `${baseFilename}_compressed.mp4`;
+          const highFilename = `${baseFilename}_high.mp4`;
+          const lowFilename = `${baseFilename}_low.mp4`;
+          const posterFilename = `${baseFilename}_poster.webp`;
+          const hlsMaster = "master.m3u8";
+
+          // Start background processing
+          processVideoPipeline(
             inputPath,
             outputDir,
             baseFilename,
             hlsOutputDir
-          );
-
-          let compressedSize = f.size;
-          try {
-            const stats = fs.statSync(path.join(outputDir, pipelineResult.standard));
-            compressedSize = stats.size;
-          } catch (e) {
-            console.error("Failed to read compressed file size:", e);
-          }
+          ).catch((e) => console.error("Background video processing failed:", e));
 
           results.push({
             type: "video",
-            filename: pipelineResult.standard,
-            url: `${BASE_URL}/uploads/works/${pipelineResult.standard}`,
-            srcHigh: `${BASE_URL}/uploads/works/${pipelineResult.high}`,
-            srcLow: `${BASE_URL}/uploads/works/${pipelineResult.low}`,
-            poster: `${BASE_URL}/uploads/works/${pipelineResult.poster}`,
-            hlsUrl: `${BASE_URL}/uploads/works/hls/${baseFilename}/${pipelineResult.hlsMaster}`,
+            filename: stdFilename,
+            url: `${BASE_URL}/uploads/works/${stdFilename}`,
+            srcHigh: `${BASE_URL}/uploads/works/${highFilename}`,
+            srcLow: `${BASE_URL}/uploads/works/${lowFilename}`,
+            poster: `${BASE_URL}/uploads/works/${posterFilename}`,
+            hlsUrl: `${BASE_URL}/uploads/works/hls/${baseFilename}/${hlsMaster}`,
             originalName: f.originalname,
             size: f.size,
-            compressedSize
+            compressedSize: f.size // Will be unknown until processing finishes
           });
         } else {
           results.push({
@@ -187,18 +186,23 @@ router.post("/assemble-chunks", requireAuth, async (req: AuthRequest, res: Respo
     const worksDir = path.join(__dirname, "../uploads/works");
     const finalPath = path.join(worksDir, finalFilename);
 
-    // Assemble chunks in order
+    // Assemble chunks in order via streams to prevent memory leaks/OOM crashes
     const writeStream = fs.createWriteStream(finalPath);
     for (let i = 0; i < parseInt(totalChunks); i++) {
       const chunkPath = path.join(CHUNKS_DIR, `${uploadId}_chunk_${i}`);
       if (!fs.existsSync(chunkPath)) {
-        writeStream.close();
+        writeStream.end();
         // Clean up partial file
         if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
         return res.status(400).json({ error: `Missing chunk ${i}` });
       }
-      const chunkData = fs.readFileSync(chunkPath);
-      writeStream.write(chunkData);
+
+      await new Promise<void>((resolve, reject) => {
+        const readStream = fs.createReadStream(chunkPath);
+        readStream.on("error", reject);
+        readStream.on("end", resolve);
+        readStream.pipe(writeStream, { end: false });
+      });
     }
 
     await new Promise<void>((resolve, reject) => {
@@ -220,27 +224,28 @@ router.post("/assemble-chunks", requireAuth, async (req: AuthRequest, res: Respo
       const baseFilename = finalFilename.replace(/\.[^/.]+$/, "");
       const hlsOutputDir = path.join(worksDir, "hls", baseFilename);
 
-      const pipelineResult = await processVideoPipeline(
-        finalPath, worksDir, baseFilename, hlsOutputDir
-      );
+      const stdFilename = `${baseFilename}_compressed.mp4`;
+      const highFilename = `${baseFilename}_high.mp4`;
+      const lowFilename = `${baseFilename}_low.mp4`;
+      const posterFilename = `${baseFilename}_poster.webp`;
+      const hlsMaster = "master.m3u8";
 
-      let compressedSize = fileStats.size;
-      try {
-        const stats = fs.statSync(path.join(worksDir, pipelineResult.standard));
-        compressedSize = stats.size;
-      } catch { }
+      // Start processing in background
+      processVideoPipeline(
+        finalPath, worksDir, baseFilename, hlsOutputDir
+      ).catch(err => console.error("Background video processing failed:", err));
 
       return res.json({
         type: "video",
-        filename: pipelineResult.standard,
-        url: `${BASE_URL}/uploads/works/${pipelineResult.standard}`,
-        srcHigh: `${BASE_URL}/uploads/works/${pipelineResult.high}`,
-        srcLow: `${BASE_URL}/uploads/works/${pipelineResult.low}`,
-        poster: `${BASE_URL}/uploads/works/${pipelineResult.poster}`,
-        hlsUrl: `${BASE_URL}/uploads/works/hls/${baseFilename}/${pipelineResult.hlsMaster}`,
+        filename: stdFilename,
+        url: `${BASE_URL}/uploads/works/${stdFilename}`,
+        srcHigh: `${BASE_URL}/uploads/works/${highFilename}`,
+        srcLow: `${BASE_URL}/uploads/works/${lowFilename}`,
+        poster: `${BASE_URL}/uploads/works/${posterFilename}`,
+        hlsUrl: `${BASE_URL}/uploads/works/hls/${baseFilename}/${hlsMaster}`,
         originalName,
         size: fileStats.size,
-        compressedSize,
+        compressedSize: fileStats.size,
       });
     } else {
       return res.json({
