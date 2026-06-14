@@ -4,6 +4,7 @@ import { useState, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { uploadMediaWithProgress, createWork } from "@/lib/adminApi";
+import { needsCompression, compressVideo, formatBytes, type CompressionProgress } from "@/lib/videoCompressor";
 import Combobox from "@/components/admin/Combobox";
 import {
   ArrowLeft, Upload, X, Film, Image as ImageIcon, Plus, Move,
@@ -49,6 +50,8 @@ export default function NewWorkPage() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [processingFiles, setProcessingFiles] = useState(false);
   const [sizeWarning, setSizeWarning] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
+  const [compressionStatus, setCompressionStatus] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -96,6 +99,33 @@ export default function NewWorkPage() {
       alert("Maximum 3 videos allowed per work.");
       return;
     }
+
+    // Client-side compression for videos over 90MB (stays under Cloudflare 100MB limit)
+    const processedFiles: File[] = [];
+    let compressed = false;
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (needsCompression(f)) {
+        compressed = true;
+        setCompressing(true);
+        setCompressionStatus(`Compressing ${f.name} (${formatBytes(f.size)})...`);
+        const result = await compressVideo(f, (progress) => {
+          setCompressionStatus(
+            `Compressing ${f.name}: ${progress.stage === "loading" ? "Loading..." : `${progress.percent}%`}`
+          );
+        });
+        setCompressionStatus(`Compressed ${f.name}: ${formatBytes(f.size)} → ${formatBytes(result.size)}`);
+        processedFiles.push(result);
+      } else {
+        processedFiles.push(f);
+      }
+    }
+    setCompressing(false);
+    if (compressed) {
+      // Clear compression status after a delay
+      setTimeout(() => setCompressionStatus(null), 5000);
+    }
+    files = processedFiles;
 
     const largeFiles = files.filter(f => f.size > 300 * 1024 * 1024);
     if (largeFiles.length > 0) {
@@ -355,6 +385,22 @@ export default function NewWorkPage() {
               <Plus size={14} /> Add Files
             </button>
           </div>
+
+          {/* Compression Progress */}
+          {(compressing || compressionStatus) && (
+            <div className="flex items-start gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-blue-400 text-xs leading-relaxed animate-pulse">
+              <Loader size={18} className={`flex-shrink-0 mt-0.5 ${compressing ? 'animate-spin' : ''}`} />
+              <div>
+                <p className="font-semibold uppercase tracking-wider mb-1">
+                  {compressing ? 'Compressing Video' : 'Compression Complete'}
+                </p>
+                <p className="text-white/75">{compressionStatus}</p>
+                {compressing && (
+                  <p className="text-white/50 mt-1">Videos over 90MB are compressed in your browser before upload to stay within hosting limits.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Drop zone */}
           {sizeWarning && (
