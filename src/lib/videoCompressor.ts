@@ -56,13 +56,15 @@ export function uploadFileChunked(
         const chunk = file.slice(start, end);
 
         const formData = new FormData();
-        formData.append("chunk", chunk, file.name);
         formData.append("uploadId", uploadId);
         formData.append("chunkIndex", String(i));
         formData.append("totalChunks", String(totalChunks));
         formData.append("originalName", file.name);
         formData.append("fileSize", String(file.size));
         formData.append("mimeType", file.type);
+        // IMPORTANT: The file must be appended LAST, after all metadata fields,
+        // so that Multer has access to req.body.uploadId when saving the file.
+        formData.append("chunk", chunk, file.name);
 
         await new Promise((res, rej) => {
           const xhr = new XMLHttpRequest();
