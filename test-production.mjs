@@ -3,7 +3,7 @@ import path from "path";
 
 const API_BASE = "https://tskapi.t4gverse.com";
 const FILE_PATH = "/Users/user/Downloads/Goa_Special.mov";
-const CHUNK_SIZE = 90 * 1024 * 1024; // 90MB
+const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
 async function runTest() {
   console.log("1. Logging in...");
@@ -43,13 +43,13 @@ async function runTest() {
 
     const blob = new Blob([buffer], { type: "video/quicktime" });
     const formData = new FormData();
-    formData.append("chunk", blob, fileName);
     formData.append("uploadId", uploadId);
     formData.append("chunkIndex", String(i));
     formData.append("totalChunks", String(totalChunks));
     formData.append("originalName", fileName);
     formData.append("fileSize", String(stats.size));
     formData.append("mimeType", "video/quicktime");
+    formData.append("chunk", blob, fileName);
 
     console.log(`Uploading chunk ${i + 1}/${totalChunks}...`);
     const chunkRes = await fetch(`${API_BASE}/api/works/upload-chunk`, {
