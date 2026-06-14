@@ -4,9 +4,11 @@ import { useEffect, useState, useRef, DragEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { getWorks, updateWork, uploadMediaWithProgress } from "@/lib/adminApi";
-import { needsCompression, compressVideo, formatBytes, type CompressionProgress } from "@/lib/videoCompressor";
+import { needsChunkedUpload, uploadFileChunked, formatBytes } from "@/lib/videoCompressor";
 import Combobox from "@/components/admin/Combobox";
 import { ArrowLeft, Plus, X, Film, Image as ImageIcon, Move, Loader, CheckCircle, Upload, AlertCircle } from "lucide-react";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 const CATEGORIES = [
   "Creative Direction", "Professional Photography", "Social Media Content",
@@ -100,35 +102,19 @@ export default function EditWorkPage() {
       return;
     }
 
-    // Client-side compression for videos over 90MB (stays under Cloudflare 100MB limit)
-    const processedFiles: File[] = [];
-    let compressed = false;
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      if (needsCompression(f)) {
-        compressed = true;
-        setCompressing(true);
-        setCompressionStatus(`Compressing ${f.name} (${formatBytes(f.size)})...`);
-        const result = await compressVideo(f, (progress) => {
-          setCompressionStatus(
-            `Compressing ${f.name}: ${progress.stage === "loading" ? "Loading..." : `${progress.percent}%`}`
-          );
-        });
-        setCompressionStatus(`Compressed ${f.name}: ${formatBytes(f.size)} → ${formatBytes(result.size)}`);
-        processedFiles.push(result);
+    // Split files into regular (<90MB) and large (>90MB, needs chunked upload)
+    const regularFiles: File[] = [];
+    const largeFiles: { file: File; index: number }[] = [];
+    files.forEach((f, i) => {
+      if (needsChunkedUpload(f)) {
+        largeFiles.push({ file: f, index: i });
       } else {
-        processedFiles.push(f);
+        regularFiles.push(f);
       }
-    }
-    setCompressing(false);
-    if (compressed) {
-      setTimeout(() => setCompressionStatus(null), 5000);
-    }
-    files = processedFiles;
+    });
 
-    const largeFiles = files.filter(f => f.size > 300 * 1024 * 1024);
     if (largeFiles.length > 0) {
-      setSizeWarning(`Warning: ${largeFiles.length} file(s) exceed 300MB. Processing large videos takes extra time (typically 2-5 minutes).`);
+      setSizeWarning(`${largeFiles.length} file(s) over 90MB will be uploaded in chunks. This may take a few minutes.`);
     } else {
       setSizeWarning(null);
     }
@@ -147,18 +133,56 @@ export default function EditWorkPage() {
     setUploadProgress(0);
     setProcessingFiles(false);
 
+    const token = typeof window !== "undefined" ? localStorage.getItem("tsk_admin_token") : null;
+
     try {
-      const results = await uploadMediaWithProgress(files, (percent) => {
-        setUploadProgress(percent);
-        if (percent >= 100) {
-          setProcessingFiles(true);
+      // Upload large files via chunked upload
+      const chunkedResults: { result: any; originalIndex: number }[] = [];
+      for (const { file, index } of largeFiles) {
+        setCompressing(true);
+        setCompressionStatus(`Uploading ${file.name} (${formatBytes(file.size)}) in chunks...`);
+
+        const result = await uploadFileChunked(file, token, API_BASE, (progress) => {
+          setCompressionStatus(
+            progress.stage === "uploading"
+              ? `Uploading ${file.name}: chunk ${progress.chunkIndex}/${progress.totalChunks} (${progress.percent}%)`
+              : progress.stage === "processing"
+              ? `Server processing ${file.name}...`
+              : `Done: ${file.name}`
+          );
+        });
+        chunkedResults.push({ result, originalIndex: index });
+      }
+      setCompressing(false);
+      setTimeout(() => setCompressionStatus(null), 3000);
+
+      // Upload regular files via single request
+      let regularResults: any[] = [];
+      if (regularFiles.length > 0) {
+        regularResults = await uploadMediaWithProgress(regularFiles, (percent) => {
+          setUploadProgress(percent);
+          if (percent >= 100) {
+            setProcessingFiles(true);
+          }
+        });
+      }
+
+      // Merge results in original order
+      const allResults: any[] = new Array(files.length);
+      let regularIdx = 0;
+      for (let i = 0; i < files.length; i++) {
+        const chunkedResult = chunkedResults.find((cr) => cr.originalIndex === i);
+        if (chunkedResult) {
+          allResults[i] = chunkedResult.result;
+        } else {
+          allResults[i] = regularResults[regularIdx++];
         }
-      });
+      }
 
       setMedia((prev) =>
         prev.map((item, i) => {
           if (i < startIdx) return item;
-          const res = results[i - startIdx];
+          const res = allResults[i - startIdx];
           if (!res) return { ...item, uploading: false, error: "Upload failed" };
           return {
             ...item,
@@ -281,17 +305,17 @@ export default function EditWorkPage() {
               <Plus size={14} /> Add Files
             </button>
           </div>
-          {/* Compression Progress */}
+          {/* Chunked Upload Progress */}
           {(compressing || compressionStatus) && (
             <div className="flex items-start gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 text-blue-400 text-xs leading-relaxed animate-pulse">
               <Loader size={18} className={`flex-shrink-0 mt-0.5 ${compressing ? 'animate-spin' : ''}`} />
               <div>
                 <p className="font-semibold uppercase tracking-wider mb-1">
-                  {compressing ? 'Compressing Video' : 'Compression Complete'}
+                  {compressing ? 'Chunked Upload' : 'Upload Complete'}
                 </p>
                 <p className="text-white/75">{compressionStatus}</p>
                 {compressing && (
-                  <p className="text-white/50 mt-1">Videos over 90MB are compressed in your browser before upload to stay within hosting limits.</p>
+                  <p className="text-white/50 mt-1">Large files are uploaded in 90MB chunks to bypass hosting limits.</p>
                 )}
               </div>
             </div>

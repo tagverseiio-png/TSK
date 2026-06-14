@@ -2,8 +2,10 @@ import { Router, Request, Response } from "express";
 import { MongoClient, ObjectId } from "mongodb";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import { upload } from "../middleware/upload";
+import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { v4 as uuidv4 } from "uuid";
 import { processVideoPipeline } from "../utils/videoProcessor";
 
 const router = Router();
@@ -132,6 +134,128 @@ router.post(
     }
   }
 );
+
+// ─── Chunked upload: temp directory and multer for chunks ─────────────────────
+const CHUNKS_DIR = path.join(__dirname, "../uploads/chunks");
+if (!fs.existsSync(CHUNKS_DIR)) {
+  fs.mkdirSync(CHUNKS_DIR, { recursive: true });
+}
+
+const chunkStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, CHUNKS_DIR),
+  filename: (req, _file, cb) => {
+    const uploadId = req.body.uploadId || "unknown";
+    const chunkIndex = req.body.chunkIndex || "0";
+    cb(null, `${uploadId}_chunk_${chunkIndex}`);
+  },
+});
+const chunkUpload = multer({
+  storage: chunkStorage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB per chunk
+});
+
+// ─── POST upload a single chunk (admin) ───────────────────────────────────────
+router.post(
+  "/upload-chunk",
+  requireAuth,
+  chunkUpload.single("chunk"),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { uploadId, chunkIndex, totalChunks } = req.body;
+      if (!uploadId || chunkIndex === undefined || !totalChunks) {
+        return res.status(400).json({ error: "Missing chunk metadata" });
+      }
+      console.log(`Chunk received: ${parseInt(chunkIndex) + 1}/${totalChunks} for upload ${uploadId}`);
+      return res.json({ ok: true, chunkIndex: parseInt(chunkIndex), received: true });
+    } catch (err) {
+      console.error("Chunk upload error:", err);
+      return res.status(500).json({ error: "Chunk upload failed" });
+    }
+  }
+);
+
+// ─── POST assemble chunks into a complete file and process ────────────────────
+router.post("/assemble-chunks", requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { uploadId, originalName, totalChunks, mimeType } = req.body;
+    if (!uploadId || !originalName || !totalChunks) {
+      return res.status(400).json({ error: "Missing assembly metadata" });
+    }
+
+    const ext = path.extname(originalName).toLowerCase() || ".mp4";
+    const finalFilename = `${uuidv4()}${ext}`;
+    const worksDir = path.join(__dirname, "../uploads/works");
+    const finalPath = path.join(worksDir, finalFilename);
+
+    // Assemble chunks in order
+    const writeStream = fs.createWriteStream(finalPath);
+    for (let i = 0; i < parseInt(totalChunks); i++) {
+      const chunkPath = path.join(CHUNKS_DIR, `${uploadId}_chunk_${i}`);
+      if (!fs.existsSync(chunkPath)) {
+        writeStream.close();
+        // Clean up partial file
+        if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
+        return res.status(400).json({ error: `Missing chunk ${i}` });
+      }
+      const chunkData = fs.readFileSync(chunkPath);
+      writeStream.write(chunkData);
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      writeStream.on("finish", resolve);
+      writeStream.on("error", reject);
+      writeStream.end();
+    });
+
+    // Clean up chunk files
+    for (let i = 0; i < parseInt(totalChunks); i++) {
+      const chunkPath = path.join(CHUNKS_DIR, `${uploadId}_chunk_${i}`);
+      try { fs.unlinkSync(chunkPath); } catch { }
+    }
+
+    const isVideo = (mimeType || "").startsWith("video/");
+    const fileStats = fs.statSync(finalPath);
+
+    if (isVideo) {
+      const baseFilename = finalFilename.replace(/\.[^/.]+$/, "");
+      const hlsOutputDir = path.join(worksDir, "hls", baseFilename);
+
+      const pipelineResult = await processVideoPipeline(
+        finalPath, worksDir, baseFilename, hlsOutputDir
+      );
+
+      let compressedSize = fileStats.size;
+      try {
+        const stats = fs.statSync(path.join(worksDir, pipelineResult.standard));
+        compressedSize = stats.size;
+      } catch { }
+
+      return res.json({
+        type: "video",
+        filename: pipelineResult.standard,
+        url: `${BASE_URL}/uploads/works/${pipelineResult.standard}`,
+        srcHigh: `${BASE_URL}/uploads/works/${pipelineResult.high}`,
+        srcLow: `${BASE_URL}/uploads/works/${pipelineResult.low}`,
+        poster: `${BASE_URL}/uploads/works/${pipelineResult.poster}`,
+        hlsUrl: `${BASE_URL}/uploads/works/hls/${baseFilename}/${pipelineResult.hlsMaster}`,
+        originalName,
+        size: fileStats.size,
+        compressedSize,
+      });
+    } else {
+      return res.json({
+        type: "image",
+        filename: finalFilename,
+        url: `${BASE_URL}/uploads/works/${finalFilename}`,
+        originalName,
+        size: fileStats.size,
+      });
+    }
+  } catch (err) {
+    console.error("Chunk assembly error:", err);
+    return res.status(500).json({ error: "Assembly failed" });
+  }
+});
 
 // ─── POST create new work (admin) ─────────────────────────────────────────────
 router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
