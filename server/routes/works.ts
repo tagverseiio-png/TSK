@@ -4,10 +4,7 @@ import { requireAuth, AuthRequest } from "../middleware/auth";
 import { upload } from "../middleware/upload";
 import path from "path";
 import fs from "fs";
-import ffmpeg from "fluent-ffmpeg";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
-
-ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+import { processVideoPipeline } from "../utils/videoProcessor";
 
 const router = Router();
 const uri = process.env.MONGODB_URI;
@@ -81,51 +78,52 @@ router.post(
         return res.status(400).json({ error: "No files uploaded" });
       }
 
-      const results = await Promise.all(
-        files.map(async (f) => {
-          const isVideo = f.mimetype.startsWith("video/");
-          let finalFilename = f.filename;
-          
-          if (isVideo) {
-            finalFilename = `${f.filename.replace(/\.[^/.]+$/, "")}_compressed.mp4`;
-            const inputPath = path.join(__dirname, "../uploads/works", f.filename);
-            const outputPath = path.join(__dirname, "../uploads/works", finalFilename);
+      const results = [];
+      for (const f of files) {
+        const isVideo = f.mimetype.startsWith("video/");
+        if (isVideo) {
+          const baseFilename = f.filename.replace(/\.[^/.]+$/, "");
+          const inputPath = path.join(__dirname, "../uploads/works", f.filename);
+          const outputDir = path.join(__dirname, "../uploads/works");
+          const hlsOutputDir = path.join(__dirname, "../uploads/works/hls", baseFilename);
 
-            await new Promise((resolve, reject) => {
-              ffmpeg(inputPath)
-                .videoFilters("scale='min(1920,iw)':-2")
-                .outputOptions([
-                  "-c:v libx264",
-                  "-preset fast",
-                  "-crf 23",
-                  "-maxrate 2500k",
-                  "-bufsize 5000k",
-                  "-c:a aac",
-                  "-b:a 128k",
-                  "-movflags +faststart" 
-                ])
-                .toFormat("mp4")
-                .on("end", () => {
-                  if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-                  resolve(true);
-                })
-                .on("error", (err) => {
-                  console.error("FFmpeg compression error:", err);
-                  reject(err);
-                })
-                .save(outputPath);
-            });
+          const pipelineResult = await processVideoPipeline(
+            inputPath,
+            outputDir,
+            baseFilename,
+            hlsOutputDir
+          );
+
+          let compressedSize = f.size;
+          try {
+            const stats = fs.statSync(path.join(outputDir, pipelineResult.standard));
+            compressedSize = stats.size;
+          } catch (e) {
+            console.error("Failed to read compressed file size:", e);
           }
 
-          return {
-            type: isVideo ? "video" : "image",
-            filename: finalFilename,
-            url: `${BASE_URL}/uploads/works/${finalFilename}`,
+          results.push({
+            type: "video",
+            filename: pipelineResult.standard,
+            url: `${BASE_URL}/uploads/works/${pipelineResult.standard}`,
+            srcHigh: `${BASE_URL}/uploads/works/${pipelineResult.high}`,
+            srcLow: `${BASE_URL}/uploads/works/${pipelineResult.low}`,
+            poster: `${BASE_URL}/uploads/works/${pipelineResult.poster}`,
+            hlsUrl: `${BASE_URL}/uploads/works/hls/${baseFilename}/${pipelineResult.hlsMaster}`,
             originalName: f.originalname,
             size: f.size,
-          };
-        })
-      );
+            compressedSize
+          });
+        } else {
+          results.push({
+            type: "image",
+            filename: f.filename,
+            url: `${BASE_URL}/uploads/works/${f.filename}`,
+            originalName: f.originalname,
+            size: f.size,
+          });
+        }
+      }
 
       return res.json(results);
     } catch (err) {
@@ -237,10 +235,32 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
           const filePath = path.join(__dirname, "../uploads/works", filename);
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
         }
+        if (item.srcHigh && item.srcHigh.includes("/uploads/works/")) {
+          const filename = item.srcHigh.split("/uploads/works/")[1];
+          const filePath = path.join(__dirname, "../uploads/works", filename);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+        if (item.srcLow && item.srcLow.includes("/uploads/works/")) {
+          const filename = item.srcLow.split("/uploads/works/")[1];
+          const filePath = path.join(__dirname, "../uploads/works", filename);
+          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
         if (item.poster && item.poster.includes("/uploads/works/")) {
           const filename = item.poster.split("/uploads/works/")[1];
           const filePath = path.join(__dirname, "../uploads/works", filename);
           if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        }
+        if (item.hlsUrl && item.hlsUrl.includes("/uploads/works/hls/")) {
+          const parts = item.hlsUrl.split("/uploads/works/hls/");
+          if (parts[1]) {
+            const hlsFolder = parts[1].split("/")[0];
+            if (hlsFolder) {
+              const hlsFolderPath = path.join(__dirname, "../uploads/works/hls", hlsFolder);
+              if (fs.existsSync(hlsFolderPath)) {
+                fs.rmSync(hlsFolderPath, { recursive: true, force: true });
+              }
+            }
+          }
         }
       }
     }

@@ -1,13 +1,16 @@
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Play } from "lucide-react";
+import VideoPlayer from "./VideoPlayer";
 
 export interface MediaItem {
     type: "image" | "video";
-    /** Direct image URL, or Google Drive file ID for videos */
     src: string;
-    /** Optional caption displayed below the media */
     caption?: string;
+    srcHigh?: string;
+    srcLow?: string;
+    poster?: string;
+    hlsUrl?: string;
 }
 
 interface MediaGalleryProps {
@@ -91,19 +94,31 @@ export default function MediaGallery({ items, maxHeight = "85vh", autoScroll = t
                                 <div className="absolute top-0 left-0 w-5 h-5 border-t border-l border-brand-orange/20 z-10 pointer-events-none" />
                                 <div className="absolute bottom-0 right-0 w-5 h-5 border-b border-r border-brand-orange/20 z-10 pointer-events-none" />
 
-                                <iframe
-                                    src={`https://drive.google.com/file/d/${item.src}/preview`}
-                                    className="w-full h-full"
-                                    style={{ border: "none" }}
-                                    allow="autoplay; encrypted-media"
-                                    allowFullScreen
-                                    loading="lazy"
-                                />
-
-                                {/* Play icon overlay */}
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-                                    <Play className="w-12 h-12 text-white" />
-                                </div>
+                                {(!item.src.startsWith("http") && !item.src.startsWith("/") && !item.src.includes(".")) ? (
+                                    <>
+                                        <iframe
+                                            src={`https://drive.google.com/file/d/${item.src}/preview`}
+                                            className="w-full h-full"
+                                            style={{ border: "none" }}
+                                            allow="autoplay; encrypted-media"
+                                            allowFullScreen
+                                            loading="lazy"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                                            <Play className="w-12 h-12 text-white" />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <VideoPlayer
+                                        src={item.src}
+                                        srcHigh={item.srcHigh}
+                                        srcLow={item.srcLow}
+                                        poster={item.poster}
+                                        hlsUrl={item.hlsUrl}
+                                        className="w-full h-full"
+                                        controls
+                                    />
+                                )}
                             </div>
                         )}
 

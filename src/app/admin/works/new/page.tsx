@@ -3,7 +3,7 @@
 import { useState, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { uploadMedia, createWork } from "@/lib/adminApi";
+import { uploadMediaWithProgress, createWork } from "@/lib/adminApi";
 import Combobox from "@/components/admin/Combobox";
 import {
   ArrowLeft, Upload, X, Film, Image as ImageIcon, Plus, Move,
@@ -23,10 +23,15 @@ interface MediaItem {
   type: "image" | "video";
   src: string;
   poster?: string;
+  srcHigh?: string;
+  srcLow?: string;
+  hlsUrl?: string;
   caption: string;
   uploading?: boolean;
   error?: string;
   preview?: string;
+  originalSize?: number;
+  compressedSize?: number;
 }
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -41,6 +46,9 @@ export default function NewWorkPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [processingFiles, setProcessingFiles] = useState(false);
+  const [sizeWarning, setSizeWarning] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: "",
@@ -78,41 +86,74 @@ export default function NewWorkPage() {
   };
 
   const processFiles = async (files: File[]) => {
+    // Check video limit
+    const newItemsCount = files.map((f) => ({
+      type: f.type.startsWith("video/") ? "video" : "image"
+    }));
+    const existingVideos = media.filter(m => m.type === "video").length;
+    const newVideos = newItemsCount.filter(i => i.type === "video").length;
+    if (existingVideos + newVideos > 3) {
+      alert("Maximum 3 videos allowed per work.");
+      return;
+    }
+
+    const largeFiles = files.filter(f => f.size > 300 * 1024 * 1024);
+    if (largeFiles.length > 0) {
+      setSizeWarning(`Warning: ${largeFiles.length} file(s) exceed 300MB. Processing large videos takes extra time (typically 2-5 minutes).`);
+    } else {
+      setSizeWarning(null);
+    }
+
     const newItems: MediaItem[] = files.map((f) => ({
       type: f.type.startsWith("video/") ? "video" : "image",
       src: "",
       caption: f.name.replace(/\.[^.]+$/, ""),
       uploading: true,
       preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
+      originalSize: f.size,
     }));
-
-    // Check video limit
-    const existingVideos = media.filter(m => m.type === "video").length;
-    const newVideos = newItems.filter(i => i.type === "video").length;
-    if (existingVideos + newVideos > 3) {
-      alert("Maximum 3 videos allowed per work.");
-      return;
-    }
 
     setMedia((prev) => [...prev, ...newItems]);
     const startIdx = media.length;
 
+    setUploadProgress(0);
+    setProcessingFiles(false);
+
     try {
-      const results = await uploadMedia(files);
+      const results = await uploadMediaWithProgress(files, (percent) => {
+        setUploadProgress(percent);
+        if (percent >= 100) {
+          setProcessingFiles(true);
+        }
+      });
+
       setMedia((prev) =>
         prev.map((item, i) => {
           if (i < startIdx) return item;
           const res = results[i - startIdx];
           if (!res) return { ...item, uploading: false, error: "Upload failed" };
-          return { ...item, src: res.url, uploading: false };
+          return {
+            ...item,
+            src: res.url,
+            srcHigh: res.srcHigh,
+            srcLow: res.srcLow,
+            poster: res.poster,
+            hlsUrl: res.hlsUrl,
+            compressedSize: res.compressedSize,
+            uploading: false
+          };
         })
       );
-    } catch {
+    } catch (err: any) {
       setMedia((prev) =>
         prev.map((item, i) =>
-          i >= startIdx ? { ...item, uploading: false, error: "Upload failed" } : item
+          i >= startIdx ? { ...item, uploading: false, error: err.message || "Upload failed" } : item
         )
       );
+    } finally {
+      setUploadProgress(null);
+      setProcessingFiles(false);
+      setSizeWarning(null);
     }
   };
 
@@ -169,8 +210,8 @@ export default function NewWorkPage() {
         lastName: form.lastName,
         image: heroImage?.src || "",
         bgImage: heroImage?.src || "",
-        media: media.filter((m) => m.src).map(({ type, src, poster, caption }) => ({
-          type, src, poster, caption,
+        media: media.filter((m) => m.src).map(({ type, src, poster, srcHigh, srcLow, hlsUrl, caption }) => ({
+          type, src, poster, srcHigh, srcLow, hlsUrl, caption,
         })),
       };
       await createWork(payload);
@@ -316,6 +357,16 @@ export default function NewWorkPage() {
           </div>
 
           {/* Drop zone */}
+          {sizeWarning && (
+            <div className="flex items-start gap-3 bg-brand-orange/10 border border-brand-orange/20 rounded-xl p-4 text-brand-orange text-xs leading-relaxed">
+              <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold uppercase tracking-wider mb-1">Large Media Warning</p>
+                <p className="text-white/75">{sizeWarning}</p>
+              </div>
+            </div>
+          )}
+
           <div
             onDrop={handleDrop}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -331,6 +382,35 @@ export default function NewWorkPage() {
             <p className="text-white/40 text-sm">Drag & drop images / videos here</p>
             <p className="text-white/20 text-xs mt-1">or click to browse • JPG, PNG, WebP, MP4, WebM, MOV</p>
           </div>
+
+          {/* Progress Indicator */}
+          {uploadProgress !== null && (
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between text-xs font-monument tracking-wider">
+                <span className="text-white/60">
+                  {processingFiles
+                    ? "COMPRESSING & GENERATING HLS (THIS MAY TAKE 2-5 MINS)..."
+                    : `UPLOADING MEDIA FILES (${uploadProgress}%)...`}
+                </span>
+                <span className="text-brand-orange">
+                  {processingFiles ? "PROCESSING..." : `${uploadProgress}%`}
+                </span>
+              </div>
+              <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden relative">
+                <div
+                  className={`h-full bg-brand-orange rounded-full transition-all duration-300 ${
+                    processingFiles ? "animate-pulse" : ""
+                  }`}
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              {processingFiles && (
+                <p className="text-white/30 text-[11px] leading-relaxed">
+                  Please do not close this page. The server is creating high/low resolution variants, optimizing audio streams, and compiling HLS chunks to enable smooth web playback.
+                </p>
+              )}
+            </div>
+          )}
 
           <input
             ref={fileInputRef}
@@ -385,9 +465,21 @@ export default function NewWorkPage() {
                       onChange={(e) => updateCaption(idx, e.target.value)}
                     />
                     {item.error && <p className="text-red-400 text-xs">{item.error}</p>}
-                    {item.uploading && <p className="text-brand-orange text-xs">Uploading…</p>}
+                    {item.uploading && <p className="text-brand-orange text-xs animate-pulse">Uploading & compressing…</p>}
                     {!item.uploading && !item.error && item.src && (
-                      <p className="text-white/20 text-[10px] truncate">{item.src}</p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-white/40">
+                        <span className="truncate max-w-[200px]">{item.src}</span>
+                        {item.originalSize && (
+                          <span>
+                            Original: {(item.originalSize / (1024 * 1024)).toFixed(1)} MB
+                          </span>
+                        )}
+                        {item.compressedSize && (
+                          <span className="text-green-400 font-semibold">
+                            Compressed: {(item.compressedSize / (1024 * 1024)).toFixed(1)} MB
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
 

@@ -76,6 +76,13 @@ app.use(
         res.setHeader("Accept-Ranges", "bytes");
         res.setHeader("Content-Type", "video/mp4");
       }
+      if (filePath.endsWith(".m3u8")) {
+        res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+        res.setHeader("Cache-Control", "no-cache");
+      }
+      if (filePath.endsWith(".ts")) {
+        res.setHeader("Content-Type", "video/mp2t");
+      }
     },
   })
 );

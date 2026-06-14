@@ -77,6 +77,57 @@ export async function uploadMedia(files: File[]): Promise<{ type: string; url: s
   return res.json();
 }
 
+export interface UploadResult {
+  type: string;
+  url: string;
+  filename: string;
+  originalName: string;
+  size: number;
+  srcHigh?: string;
+  srcLow?: string;
+  poster?: string;
+  hlsUrl?: string;
+  compressedSize?: number;
+}
+
+export function uploadMediaWithProgress(
+  files: File[],
+  onProgress: (percent: number) => void
+): Promise<UploadResult[]> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    files.forEach((f) => formData.append("files", f));
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch (err) {
+          reject(new Error("Failed to parse response"));
+        }
+      } else {
+        reject(new Error(`Upload failed with status ${xhr.status}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network upload error"));
+
+    const token = getToken();
+    xhr.open("POST", `${API_BASE}/api/works/upload-media`);
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
+    xhr.send(formData);
+  });
+}
+
 // ── Bookings ──────────────────────────────────────────────────────────────────
 export function getBookings() {
   return apiFetch<any[]>("/api/bookings");

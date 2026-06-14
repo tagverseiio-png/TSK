@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, DragEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { getWorks, updateWork, uploadMedia } from "@/lib/adminApi";
+import { getWorks, updateWork, uploadMediaWithProgress } from "@/lib/adminApi";
 import Combobox from "@/components/admin/Combobox";
 import { ArrowLeft, Plus, X, Film, Image as ImageIcon, Move, Loader, CheckCircle, Upload, AlertCircle } from "lucide-react";
 
@@ -20,10 +20,15 @@ interface MediaItem {
   type: "image" | "video";
   src: string;
   poster?: string;
+  srcHigh?: string;
+  srcLow?: string;
+  hlsUrl?: string;
   caption: string;
   uploading?: boolean;
   error?: string;
   preview?: string;
+  originalSize?: number;
+  compressedSize?: number;
 }
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -39,6 +44,9 @@ export default function EditWorkPage() {
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [workId, setWorkId] = useState("");
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [processingFiles, setProcessingFiles] = useState(false);
+  const [sizeWarning, setSizeWarning] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     name: "", firstName: "", lastName: "", slug: "", category: "",
@@ -78,33 +86,73 @@ export default function EditWorkPage() {
   }, [params.id, router]);
 
   const processFiles = async (files: File[]) => {
-    const newItems: MediaItem[] = files.map((f) => ({
-      type: f.type.startsWith("video/") ? "video" : "image",
-      src: "", caption: f.name.replace(/\.[^.]+$/, ""),
-      uploading: true,
-      preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
-    }));
     // Check video limit
+    const newItemsCount = files.map((f) => ({
+      type: f.type.startsWith("video/") ? "video" : "image"
+    }));
     const existingVideos = media.filter(m => m.type === "video").length;
-    const newVideos = newItems.filter(i => i.type === "video").length;
+    const newVideos = newItemsCount.filter(i => i.type === "video").length;
     if (existingVideos + newVideos > 3) {
       alert("Maximum 3 videos allowed per work.");
       return;
     }
 
+    const largeFiles = files.filter(f => f.size > 300 * 1024 * 1024);
+    if (largeFiles.length > 0) {
+      setSizeWarning(`Warning: ${largeFiles.length} file(s) exceed 300MB. Processing large videos takes extra time (typically 2-5 minutes).`);
+    } else {
+      setSizeWarning(null);
+    }
+
+    const newItems: MediaItem[] = files.map((f) => ({
+      type: f.type.startsWith("video/") ? "video" : "image",
+      src: "", caption: f.name.replace(/\.[^.]+$/, ""),
+      uploading: true,
+      preview: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
+      originalSize: f.size,
+    }));
+
     const startIdx = media.length;
     setMedia((prev) => [...prev, ...newItems]);
+
+    setUploadProgress(0);
+    setProcessingFiles(false);
+
     try {
-      const results = await uploadMedia(files);
+      const results = await uploadMediaWithProgress(files, (percent) => {
+        setUploadProgress(percent);
+        if (percent >= 100) {
+          setProcessingFiles(true);
+        }
+      });
+
       setMedia((prev) =>
         prev.map((item, i) => {
           if (i < startIdx) return item;
           const res = results[i - startIdx];
-          return res ? { ...item, src: res.url, uploading: false } : { ...item, uploading: false, error: "Failed" };
+          if (!res) return { ...item, uploading: false, error: "Upload failed" };
+          return {
+            ...item,
+            src: res.url,
+            srcHigh: res.srcHigh,
+            srcLow: res.srcLow,
+            poster: res.poster,
+            hlsUrl: res.hlsUrl,
+            compressedSize: res.compressedSize,
+            uploading: false
+          };
         })
       );
-    } catch {
-      setMedia((prev) => prev.map((item, i) => i >= startIdx ? { ...item, uploading: false, error: "Failed" } : item));
+    } catch (err: any) {
+      setMedia((prev) =>
+        prev.map((item, i) =>
+          i >= startIdx ? { ...item, uploading: false, error: err.message || "Upload failed" } : item
+        )
+      );
+    } finally {
+      setUploadProgress(null);
+      setProcessingFiles(false);
+      setSizeWarning(null);
     }
   };
 
@@ -126,7 +174,9 @@ export default function EditWorkPage() {
         lastName: form.lastName,
         image: heroImage?.src || form.name,
         bgImage: heroImage?.src || "",
-        media: media.filter((m) => m.src).map(({ type, src, poster, caption }) => ({ type, src, poster, caption })),
+        media: media.filter((m) => m.src).map(({ type, src, poster, srcHigh, srcLow, hlsUrl, caption }) => ({
+          type, src, poster, srcHigh, srcLow, hlsUrl, caption
+        })),
       });
       router.push("/admin/works");
     } catch (err: any) { alert(err.message); }
@@ -202,10 +252,50 @@ export default function EditWorkPage() {
               <Plus size={14} /> Add Files
             </button>
           </div>
+          {sizeWarning && (
+            <div className="flex items-start gap-3 bg-brand-orange/10 border border-brand-orange/20 rounded-xl p-4 text-brand-orange text-xs leading-relaxed">
+              <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-semibold uppercase tracking-wider mb-1">Large Media Warning</p>
+                <p className="text-white/75">{sizeWarning}</p>
+              </div>
+            </div>
+          )}
+
           <div onDrop={handleDrop} onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onClick={() => fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${dragOver ? "border-brand-orange bg-brand-orange/5" : "border-white/10 hover:border-white/20"}`}>
             <Upload size={28} className="text-white/20 mx-auto mb-2" />
             <p className="text-white/30 text-sm">Drop new files here or click to browse</p>
           </div>
+
+          {/* Progress Indicator */}
+          {uploadProgress !== null && (
+            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between text-xs font-monument tracking-wider">
+                <span className="text-white/60">
+                  {processingFiles
+                    ? "COMPRESSING & GENERATING HLS (THIS MAY TAKE 2-5 MINS)..."
+                    : `UPLOADING MEDIA FILES (${uploadProgress}%)...`}
+                </span>
+                <span className="text-brand-orange">
+                  {processingFiles ? "PROCESSING..." : `${uploadProgress}%`}
+                </span>
+              </div>
+              <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden relative">
+                <div
+                  className={`h-full bg-brand-orange rounded-full transition-all duration-300 ${
+                    processingFiles ? "animate-pulse" : ""
+                  }`}
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+              {processingFiles && (
+                <p className="text-white/30 text-[11px] leading-relaxed">
+                  Please do not close this page. The server is creating high/low resolution variants, optimizing audio streams, and compiling HLS chunks to enable smooth web playback.
+                </p>
+              )}
+            </div>
+          )}
+
           <input ref={fileInputRef} type="file" multiple accept="image/*,video/*" className="hidden" onChange={(e) => { if (e.target.files) processFiles(Array.from(e.target.files)); e.target.value = ""; }} />
           {media.map((item, idx) => (
             <div key={idx} className="flex items-start gap-4 bg-white/[0.03] border border-white/8 rounded-xl p-4">
@@ -218,7 +308,22 @@ export default function EditWorkPage() {
               <div className="flex-1">
                 <input className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-brand-orange transition-all" value={item.caption} onChange={(e) => setMedia((prev) => prev.map((m, i) => i === idx ? { ...m, caption: e.target.value } : m))} placeholder="Caption" />
                 {item.error && <p className="text-red-400 text-xs mt-1">{item.error}</p>}
-                {!item.uploading && !item.error && <p className="text-white/20 text-[10px] mt-1 truncate">{item.src}</p>}
+                {item.uploading && <p className="text-brand-orange text-xs animate-pulse mt-1">Uploading & compressing…</p>}
+                {!item.uploading && !item.error && item.src && (
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-white/40 mt-1">
+                    <span className="truncate max-w-[200px]">{item.src}</span>
+                    {item.originalSize && (
+                      <span>
+                        Original: {(item.originalSize / (1024 * 1024)).toFixed(1)} MB
+                      </span>
+                    )}
+                    {item.compressedSize && (
+                      <span className="text-green-400 font-semibold">
+                        Compressed: {(item.compressedSize / (1024 * 1024)).toFixed(1)} MB
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 {idx > 0 && <button type="button" onClick={() => setMedia((prev) => { const u = [...prev]; const [m] = u.splice(idx, 1); return [m, ...u]; })} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-brand-orange/20 hover:text-brand-orange text-white/30 transition-all"><Move size={14} /></button>}

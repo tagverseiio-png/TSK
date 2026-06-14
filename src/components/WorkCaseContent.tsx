@@ -3,14 +3,18 @@
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import VideoPlayer from "./VideoPlayer";
 
 interface MediaItem {
     type: 'image' | 'video';
     src: string;
     caption?: string;
     poster?: string;
+    srcHigh?: string;
+    srcLow?: string;
+    hlsUrl?: string;
 }
 
 interface StudyData {
@@ -72,7 +76,7 @@ export default function WorkCaseContent({
         }
     };
 
-    const handleDragEnd = (event: any, info: any) => {
+    const handleDragEnd = (event: unknown, info: PanInfo) => {
         const threshold = 50;
         if (info.offset.x < -threshold) {
             nextSlide();
@@ -236,16 +240,15 @@ export default function WorkCaseContent({
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-black relative">
-                                        <video
+                                        <VideoPlayer
                                             src={study.media[currentIndex].src}
-                                            poster={(study.media[currentIndex] as any).poster}
+                                            srcHigh={study.media[currentIndex].srcHigh}
+                                            srcLow={study.media[currentIndex].srcLow}
+                                            poster={study.media[currentIndex].poster}
+                                            hlsUrl={study.media[currentIndex].hlsUrl}
                                             className="w-full h-full object-cover"
                                             controls
-                                            controlsList="nodownload"
-                                            playsInline
-                                        >
-                                            Your browser does not support video playback.
-                                        </video>
+                                        />
                                     </div>
                                 )}
                             </motion.div>

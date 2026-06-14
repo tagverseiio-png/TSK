@@ -7,8 +7,9 @@ import fs from "fs";
 const WORKS_DIR = path.join(__dirname, "../uploads/works");
 const CLIENTS_DIR = path.join(__dirname, "../uploads/clients");
 const SERVICES_DIR = path.join(__dirname, "../uploads/services");
+const HLS_DIR = path.join(__dirname, "../uploads/works/hls");
 
-[WORKS_DIR, CLIENTS_DIR, SERVICES_DIR].forEach(dir => {
+[WORKS_DIR, CLIENTS_DIR, SERVICES_DIR, HLS_DIR].forEach(dir => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
