@@ -64,19 +64,30 @@ export function uploadFileChunked(
         formData.append("fileSize", String(file.size));
         formData.append("mimeType", file.type);
 
-        const resp = await fetch(`${apiBase}/api/works/upload-chunk`, {
-          method: "POST",
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          body: formData,
+        await new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const chunkProgress = e.loaded / e.total;
+              const overallPercent = Math.round(((i + chunkProgress) / totalChunks) * 80); // 0-80%
+              onProgress?.({
+                stage: "uploading",
+                percent: overallPercent,
+                chunkIndex: i + 1,
+                totalChunks,
+              });
+            }
+          };
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) res(xhr.responseText);
+            else rej(new Error(`Chunk ${i + 1}/${totalChunks} upload failed (${xhr.status})`));
+          };
+          xhr.onerror = () => rej(new Error(`Chunk ${i + 1}/${totalChunks} network error`));
+          
+          xhr.open("POST", `${apiBase}/api/works/upload-chunk`);
+          if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+          xhr.send(formData);
         });
-
-        if (!resp.ok) {
-          const errText = await resp.text();
-          throw new Error(`Chunk ${i + 1}/${totalChunks} upload failed (${resp.status}): ${errText}`);
-        }
-
-        const pct = Math.round(((i + 1) / totalChunks) * 80); // 0-80% for chunk uploads
-        onProgress?.({ stage: "uploading", percent: pct, chunkIndex: i + 1, totalChunks });
       }
 
       // All chunks uploaded — tell server to assemble and process
