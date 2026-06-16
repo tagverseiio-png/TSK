@@ -60,13 +60,9 @@ export default function PhotographerHero({ title, bio, number }: { title: string
                     }}
                     className="flex items-center gap-4 text-white hover:text-[#f16920] transition-colors uppercase font-monument text-[10px] md:text-[12px] font-bold tracking-[1px] group"
                 >
-                    <motion.div
-                        animate={{ y: [0, 5, 0] }}
-                        transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
-                        className="w-4 h-4 text-white group-hover:text-[#f16920]"
-                    >
+                    <span className="text-white group-hover:text-[#f16920] transition-colors">
                         ↓
-                    </motion.div>
+                    </span>
                     SCROLL TO EXPLORE
                 </button>
             </div>

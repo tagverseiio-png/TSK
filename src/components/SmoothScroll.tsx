@@ -8,17 +8,19 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [isMobile, setIsMobile] = useState(false);
 
+  const [isMounted, setIsMounted] = useState(false);
+
   useEffect(() => {
-    // Detect mobile on mount — disable Lenis on mobile for native scroll perf
+    setIsMounted(true);
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // Disable smooth scroll on admin pages and mobile
+  // Disable smooth scroll during SSR, on admin pages, and on mobile
   const isAdmin = pathname?.startsWith("/admin");
-  if (isMobile || isAdmin) {
+  if (!isMounted || isMobile || isAdmin) {
     return <>{children}</>;
   }
 

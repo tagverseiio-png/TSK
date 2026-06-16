@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
 
 const directors = [
@@ -14,11 +13,14 @@ const directors = [
 
 export default function DirectorsList() {
     const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const imgRef = useRef<HTMLDivElement>(null);
 
-    const handleMouseMove = (e: React.MouseEvent) => {
-        setMousePos({ x: e.clientX, y: e.clientY });
-    };
+    // Use RAF-throttled mouse tracking instead of setState on every pixel
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (imgRef.current) {
+            imgRef.current.style.transform = `translate(${e.clientX - 200}px, ${e.clientY - 275}px)`;
+        }
+    }, []);
 
     return (
         <div
@@ -26,37 +28,33 @@ export default function DirectorsList() {
             onMouseMove={handleMouseMove}
         >
             {hoveredIdx !== null && (
-                <motion.div
-                    className="pointer-events-none fixed top-0 left-0 w-[400px] h-[550px] overflow-hidden rounded-xl shadow-2xl z-0"
-                    animate={{
-                        x: mousePos.x - 200,
-                        y: mousePos.y - 275,
-                        opacity: 1,
-                        scale: 1,
-                    }}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                <div
+                    ref={imgRef}
+                    className="pointer-events-none fixed top-0 left-0 w-[400px] h-[550px] overflow-hidden rounded-xl shadow-2xl z-0 transition-opacity duration-300"
+                    style={{ opacity: 1 }}
                 >
                     <img
                         src={directors[hoveredIdx].image}
                         alt={directors[hoveredIdx].name}
                         className="w-full h-full object-cover rounded-xl"
+                        loading="lazy"
+                        decoding="async"
                     />
-                </motion.div>
+                </div>
             )}
 
             <div className="relative z-10 flex flex-col items-start space-y-2 md:space-y-4">
                 {directors.map((dir, idx) => (
-                    <motion.div
+                    <div
                         key={dir.id}
                         onMouseEnter={() => setHoveredIdx(idx)}
                         onMouseLeave={() => setHoveredIdx(null)}
                         className="group cursor-pointer"
                     >
-                        <h2 className={`text-5xl md:text-8xl lg:text-[7vw] font-bold tracking-tighter transition-all duration-300 mix-blend-difference ${hoveredIdx === idx ? 'text-brand-orange pl-8' : 'text-brand-white'}`}>
+                        <h2 className={`text-5xl md:text-8xl lg:text-[7vw] font-bold tracking-tighter transition-all duration-300 ${hoveredIdx === idx ? 'text-brand-orange pl-8' : 'text-brand-white'}`}>
                             {dir.name}
                         </h2>
-                    </motion.div>
+                    </div>
                 ))}
             </div>
         </div>

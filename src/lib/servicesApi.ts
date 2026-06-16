@@ -6,13 +6,13 @@ function getToken(): string | null {
 }
 
 export async function getServices() {
-    const res = await fetch(`${API_BASE}/api/services`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/services`);
     if (!res.ok) throw new Error('Failed to fetch services');
     return res.json();
 }
 
 export async function getServiceBySlug(slug: string) {
-    const res = await fetch(`${API_BASE}/api/services/${slug}`, { cache: 'no-store' });
+    const res = await fetch(`${API_BASE}/api/services/${slug}`);
     if (!res.ok) throw new Error('Failed to fetch service');
     return res.json();
 }

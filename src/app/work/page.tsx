@@ -2,12 +2,10 @@ import RosterList from "@/components/RosterList";
 import WorkBonus from "@/components/WorkBonus";
 import clientPromise from "@/lib/mongodb";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const fetchCache = "force-no-store";
+export const revalidate = 60; // ISR: re-fetch from DB at most every 60s
 async function getCaseStudies() {
   try {
-    const client = await clientPromise.connect();
+    const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "TSK");
     const docs = await db
       .collection("caseStudies")

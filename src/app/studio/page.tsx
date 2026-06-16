@@ -2,7 +2,7 @@ import BookingForm from "@/components/studio/BookingForm";
 import NoiseOverlay from "@/components/NoiseOverlay";
 import clientPromise from "@/lib/mongodb";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR
 
 export const metadata = {
   title: "Studio Rental | The Simple Krew",
@@ -11,7 +11,7 @@ export const metadata = {
 
 async function getStudioConfig() {
   try {
-    const client = await clientPromise.connect();
+    const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "TSK");
     const config = await db.collection("studioConfig").findOne({});
     if (!config) throw new Error("No studio config found");

@@ -10,6 +10,7 @@ export default function ContactPage() {
                     playsInline
                     muted
                     loop
+                    preload="none"
                     className="w-full h-full object-cover opacity-60"
                 >
                     <source src="https://elektra-nuxt.cdn.prismic.io/elektra-nuxt/Z9_VXXdAxsiBvxU6_Video-contact-comp.mp4" type="video/mp4" />

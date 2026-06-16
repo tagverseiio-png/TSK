@@ -1,7 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Navigation from "@/components/Navigation";
+import dynamic from "next/dynamic";
+
+const Navigation = dynamic(() => import("@/components/Navigation"), { ssr: false });
 
 export default function NavigationWrapper() {
   const pathname = usePathname();

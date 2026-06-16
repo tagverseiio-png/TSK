@@ -8,21 +8,24 @@ const uri = process.env.MONGODB_URI;
 const options: MongoClientOptions = {};
 
 let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
 
 declare global {
   // eslint-disable-next-line no-var
-  var _mongoClient: MongoClient | undefined;
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
 if (process.env.NODE_ENV === "development") {
   // In development, use a global variable so the MongoClient
   // is not re-created on every HMR reload.
-  if (!global._mongoClient) {
-    global._mongoClient = new MongoClient(uri, options);
+  if (!global._mongoClientPromise) {
+    client = new MongoClient(uri, options);
+    global._mongoClientPromise = client.connect();
   }
-  client = global._mongoClient;
+  clientPromise = global._mongoClientPromise;
 } else {
   client = new MongoClient(uri, options);
+  clientPromise = client.connect();
 }
 
-export default client;
+export default clientPromise;
