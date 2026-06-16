@@ -3,7 +3,7 @@
 import { useState, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { uploadMediaWithProgress, createWork } from "@/lib/adminApi";
+import { uploadMediaWithProgress, createWork, deleteMedia } from "@/lib/adminApi";
 import { needsChunkedUpload, uploadFileChunked, formatBytes } from "@/lib/videoCompressor";
 import Combobox from "@/components/admin/Combobox";
 import {
@@ -224,7 +224,11 @@ export default function NewWorkPage() {
     if (files.length) processFiles(files);
   };
 
-  const removeMedia = (idx: number) => {
+  const removeMedia = async (idx: number) => {
+    const item = media[idx];
+    if (item.src && !item.uploading) {
+      try { await deleteMedia(item.src); } catch (e) { console.error("Failed to delete media from server", e); }
+    }
     setMedia((prev) => prev.filter((_, i) => i !== idx));
   };
 

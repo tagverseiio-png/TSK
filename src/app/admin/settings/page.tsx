@@ -57,8 +57,17 @@ export default function AdminSettingsPage() {
   };
 
   const addLogoFromUrl = () => {
-    if (!newLogoUrl.trim() || config.clientLogos.includes(newLogoUrl.trim())) return;
-    setConfig((c) => ({ ...c, clientLogos: [...c.clientLogos, newLogoUrl.trim()] }));
+    const url = newLogoUrl.trim();
+    if (!url) return;
+    
+    // Validate it's a URL
+    if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
+      alert("Please enter a valid URL starting with http://, https://, or /");
+      return;
+    }
+    
+    if (config.clientLogos.includes(url)) return;
+    setConfig((c) => ({ ...c, clientLogos: [...c.clientLogos, url] }));
     setNewLogoUrl("");
   };
 
@@ -206,7 +215,7 @@ export default function AdminSettingsPage() {
           {/* Current Logos Grid */}
           {config.clientLogos.length > 0 && (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 mt-4">
-              {config.clientLogos.map((logo, idx) => (
+              {config.clientLogos.filter(url => url.startsWith("http") || url.startsWith("/")).map((logo, idx) => (
                 <div key={idx} className="relative group bg-white/5 border border-white/10 rounded-xl aspect-video flex items-center justify-center p-2 overflow-hidden">
                   <img src={logo} alt={`Logo ${idx}`} className="w-full h-full object-contain filter " />
                   <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getBookings, getWorks } from "@/lib/adminApi";
-import { Film, CalendarCheck, Clock, CheckCircle, XCircle, Settings, Plus } from "lucide-react";
+import { Film, CalendarCheck, Clock, CheckCircle, XCircle, Settings, Plus, HardDrive } from "lucide-react";
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -79,6 +79,7 @@ export default function AdminDashboard() {
           { href: "/admin/bookings", label: "Manage Bookings", desc: "Review and confirm pending bookings", icon: CalendarCheck },
           { href: "/admin/works/new", label: "Add New Work", desc: "Upload a new case study with media", icon: Film },
           { href: "/admin/clients", label: "Manage Clients", desc: "Update clients logos on work page", icon: CheckCircle },
+          { href: "/admin/storage", label: "Server Storage", desc: "Manage all uploaded files and media", icon: HardDrive },
           { href: "/admin/settings", label: "Studio Settings", desc: "Update pricing, slots, WhatsApp number", icon: Settings },
         ].map(({ href, label, desc, icon: Icon }) => (
           <Link key={href} href={href} className="bg-white/[0.02] border border-white/8 rounded-2xl p-6 hover:border-brand-orange/40 hover:bg-white/5 transition-all group">

@@ -128,6 +128,13 @@ export function uploadMediaWithProgress(
   });
 }
 
+export function deleteMedia(url: string) {
+  return apiFetch<any>(`/api/works/media`, {
+    method: "DELETE",
+    body: JSON.stringify({ url }),
+  });
+}
+
 // ── Bookings ──────────────────────────────────────────────────────────────────
 export function getBookings() {
   return apiFetch<any[]>("/api/bookings");
@@ -186,6 +193,27 @@ export async function uploadClientLogo(file: File): Promise<{ url: string; filen
 
   if (!res.ok) throw new Error("Logo upload failed");
   return res.json();
+}
+
+// ── Storage ───────────────────────────────────────────────────────────────────
+export interface StorageFile {
+  name: string;
+  path: string;
+  url: string;
+  size: number;
+  folder: string;
+  createdAt: string;
+}
+
+export function getStorageFiles() {
+  return apiFetch<StorageFile[]>("/api/storage");
+}
+
+export function deleteStorageFile(filePath: string) {
+  return apiFetch<any>("/api/storage", {
+    method: "DELETE",
+    body: JSON.stringify({ filePath }),
+  });
 }
 
 export { API_BASE };

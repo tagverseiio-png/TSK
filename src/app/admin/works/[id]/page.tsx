@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, DragEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { getWorks, updateWork, uploadMediaWithProgress } from "@/lib/adminApi";
+import { getWorks, updateWork, uploadMediaWithProgress, deleteMedia } from "@/lib/adminApi";
 import { needsChunkedUpload, uploadFileChunked, formatBytes } from "@/lib/videoCompressor";
 import Combobox from "@/components/admin/Combobox";
 import { ArrowLeft, Plus, X, Film, Image as ImageIcon, Move, Loader, CheckCircle, Upload, AlertCircle } from "lucide-react";
@@ -396,7 +396,13 @@ export default function EditWorkPage() {
               </div>
               <div className="flex flex-col gap-2">
                 {idx > 0 && <button type="button" onClick={() => setMedia((prev) => { const u = [...prev]; const [m] = u.splice(idx, 1); return [m, ...u]; })} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-brand-orange/20 hover:text-brand-orange text-white/30 transition-all"><Move size={14} /></button>}
-                <button type="button" onClick={() => setMedia((prev) => prev.filter((_, i) => i !== idx))} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-white/30 transition-all"><X size={14} /></button>
+                <button type="button" onClick={async () => {
+                  const item = media[idx];
+                  if (item.src && !item.uploading) {
+                    try { await deleteMedia(item.src); } catch (e) { console.error("Failed to delete media from server", e); }
+                  }
+                  setMedia((prev) => prev.filter((_, i) => i !== idx));
+                }} className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 hover:bg-red-500/20 hover:text-red-400 text-white/30 transition-all"><X size={14} /></button>
               </div>
             </div>
           ))}

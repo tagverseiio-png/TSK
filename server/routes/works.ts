@@ -244,6 +244,47 @@ router.post("/assemble-chunks", requireAuth, async (req: AuthRequest, res: Respo
   }
 });
 
+// ─── DELETE single media file (admin) ─────────────────────────────────────────
+router.delete("/media", requireAuth, async (req: AuthRequest, res: Response) => {
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: "url is required" });
+
+    if (url.includes("/uploads/works/")) {
+      const filename = url.split("/uploads/works/")[1];
+      const filePath = path.join(__dirname, "../uploads/works", filename);
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+      const baseFilename = filename.replace(/\.(mp4|webp)$/, "").replace(/_compressed|_high|_low|_poster/, "");
+      
+      const relatedFiles = [
+        `${baseFilename}_compressed.mp4`,
+        `${baseFilename}_high.mp4`,
+        `${baseFilename}_low.mp4`,
+        `${baseFilename}_poster.webp`,
+      ];
+
+      for (const rf of relatedFiles) {
+        const rfPath = path.join(__dirname, "../uploads/works", rf);
+        if (fs.existsSync(rfPath)) fs.unlinkSync(rfPath);
+      }
+
+      const hlsFolderPath = path.join(__dirname, "../uploads/works/hls", baseFilename);
+      if (fs.existsSync(hlsFolderPath)) {
+        fs.rmSync(hlsFolderPath, { recursive: true, force: true });
+      }
+    }
+    
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("Delete media error:", err);
+    return res.status(500).json({ 
+      error: "Failed to delete media",
+      details: err instanceof Error ? err.message : String(err)
+    });
+  }
+});
+
 // ─── POST create new work (admin) ─────────────────────────────────────────────
 router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
   try {
