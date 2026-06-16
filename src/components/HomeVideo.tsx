@@ -15,13 +15,13 @@ const projects = [
         id: 2,
         title: "Professional Photography & Videography",
         description: "Core production service. High demand, visual impact, premium pricing.",
-        video: "/video3.mp4"
+        video: "/video2.mp4"
     },
     {
         id: 3,
         title: "High-End Commercial Ads",
         description: "Biggest money-maker. Brands pay more for cinematic ad production.",
-        video: "/video4.mp4"
+        video: "/video1.mp4"
     },
     {
         id: 4,
@@ -40,6 +40,7 @@ export default function HomeVideo() {
     const [videoDuration, setVideoDuration] = useState(AUTO_ROTATE_TIME);
     const [videoOpacity, setVideoOpacity] = useState(0);
     const videoRef = useRef<HTMLVideoElement>(null);
+    const lastLoadedSrc = useRef<string | null>(null);
 
     const nextVideo = useCallback(() => {
         setActiveIndex((prev) => (prev + 1) % projects.length);
@@ -66,7 +67,16 @@ export default function HomeVideo() {
     useEffect(() => {
         if (activeIndex === displayIndex) return;
 
-        // Step 1: Fade out
+        const nextSrc = projects[activeIndex].video;
+        const currentSrc = projects[displayIndex].video;
+
+        if (nextSrc === currentSrc) {
+            // Seamless transition: Video remains playing, just update text
+            setDisplayIndex(activeIndex);
+            return;
+        }
+
+        // Step 1: Fade out for new video
         const frame = requestAnimationFrame(() => {
             setVideoOpacity(0);
         });
@@ -84,9 +94,16 @@ export default function HomeVideo() {
 
     useEffect(() => {
         if (videoRef.current) {
-            // Step 3: Load and play new source, then fade back in
-            videoRef.current.load();
-            videoRef.current.play().catch(() => {});
+            const currentSrc = projects[displayIndex].video;
+
+            // Only reload the video element if the source URL actually changed
+            if (lastLoadedSrc.current !== currentSrc) {
+                lastLoadedSrc.current = currentSrc;
+                videoRef.current.load();
+                videoRef.current.play().catch(() => {});
+            }
+            
+            // Step 3: Fade back in
             const frame = requestAnimationFrame(() => {
                 setVideoOpacity(0.6);
             });
