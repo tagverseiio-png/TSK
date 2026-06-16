@@ -44,7 +44,15 @@ app.use(
       // Allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.includes("localhost") || origin.endsWith(".thesimplekrew.com")) {
+      // Bulletproof check for frontend domains
+      if (
+        origin.includes("localhost") || 
+        origin.includes("127.0.0.1") ||
+        origin.includes("thesimplekrew.com") || 
+        origin.includes("vercel.app") ||
+        origin === process.env.FRONTEND_URL ||
+        origin === process.env.NEXT_PUBLIC_URL
+      ) {
         callback(null, true);
       } else {
         callback(null, false); // Block other origins
