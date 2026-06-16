@@ -218,14 +218,14 @@ export default function WorkCaseContent({
                         className="relative group w-full h-[60vh] md:h-[70vh] lg:h-[75vh] rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_120px_rgba(0,0,0,0.9)] cursor-ns-resize"
                         onWheel={handleWheel}
                     >
-                        <AnimatePresence mode="wait">
+                        <AnimatePresence mode="popLayout">
                             <motion.div
                                 key={currentIndex}
-                                initial={{ opacity: 0, scale: 1.05 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                                className="absolute inset-0 w-full h-full will-change-[transform,opacity]"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.6, ease: "easeInOut" }}
+                                className="absolute inset-0 w-full h-full"
                                 drag="x"
                                 dragConstraints={{ left: 0, right: 0 }}
                                 onDragEnd={handleDragEnd}

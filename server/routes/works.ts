@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import { upload } from "../middleware/upload";
 import multer from "multer";
@@ -7,32 +7,17 @@ import path from "path";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { processVideoPipeline } from "../utils/videoProcessor";
+import { getDb } from "../lib/db";
 
 const router = Router();
-const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB || "TSK";
 const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
-
-// Helper to get DB client
-async function getDb() {
-  if (!uri) {
-    throw new Error("MONGODB_URI is not defined");
-  }
-  const client = new MongoClient(uri);
-  await client.connect();
-  return { client, db: client.db(dbName) };
-}
 
 // ─── GET all works (public) ───────────────────────────────────────────────────
 router.get("/", async (_req: Request, res: Response) => {
-  let client: MongoClient | null = null;
   try {
-    const { client: c, db } = await getDb();
-    client = c;
+    const { db } = await getDb();
     const works = await db.collection("caseStudies").find({}).sort({ number: 1 }).toArray();
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.json(works);
   } catch (err) {
     console.error("Fetch all works error:", err);
@@ -40,22 +25,16 @@ router.get("/", async (_req: Request, res: Response) => {
       error: "Failed to fetch works",
       details: err instanceof Error ? err.message : String(err)
     });
-  } finally {
-    await client?.close();
   }
 });
 
 // ─── GET single work by slug (public) ────────────────────────────────────────
 router.get("/:slug", async (req: Request, res: Response) => {
-  let client: MongoClient | null = null;
   try {
-    const { client: c, db } = await getDb();
-    client = c;
+    const { db } = await getDb();
     const work = await db.collection("caseStudies").findOne({ slug: req.params.slug });
     if (!work) return res.status(404).json({ error: "Not found" });
-    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.json(work);
   } catch (err) {
     console.error("Fetch work by slug error:", err);
@@ -63,8 +42,6 @@ router.get("/:slug", async (req: Request, res: Response) => {
       error: "Failed to fetch work",
       details: err instanceof Error ? err.message : String(err)
     });
-  } finally {
-    await client?.close();
   }
 });
 
@@ -264,7 +241,6 @@ router.post("/assemble-chunks", requireAuth, async (req: AuthRequest, res: Respo
 
 // ─── POST create new work (admin) ─────────────────────────────────────────────
 router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
-  let client: MongoClient | null = null;
   try {
     const {
       name, firstName, lastName, slug, category, year, count,
@@ -276,8 +252,7 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: "name and slug are required" });
     }
 
-    const { client: c, db } = await getDb();
-    client = c;
+    const { db } = await getDb();
 
     const existing = await db.collection("caseStudies").findOne({ slug });
     if (existing) {
@@ -307,18 +282,14 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
       error: "Failed to create work",
       details: err instanceof Error ? err.message : String(err)
     });
-  } finally {
-    await client?.close();
   }
 });
 
 // ─── PUT update work (admin) ──────────────────────────────────────────────────
 router.put("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
-  let client: MongoClient | null = null;
   try {
     const { id } = req.params;
-    const { client: c, db } = await getDb();
-    client = c;
+    const { db } = await getDb();
 
     const updates = { ...req.body, updatedAt: new Date() };
     delete updates._id;
@@ -341,18 +312,14 @@ router.put("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
       error: "Failed to update work",
       details: err instanceof Error ? err.message : String(err)
     });
-  } finally {
-    await client?.close();
   }
 });
 
 // ─── DELETE work (admin) ──────────────────────────────────────────────────────
 router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
-  let client: MongoClient | null = null;
   try {
     const { id } = req.params;
-    const { client: c, db } = await getDb();
-    client = c;
+    const { db } = await getDb();
 
     const work = await db.collection("caseStudies").findOne({ _id: new ObjectId(id as string) });
     if (!work) return res.status(404).json({ error: "Not found" });
@@ -402,8 +369,6 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
       error: "Failed to delete work",
       details: err instanceof Error ? err.message : String(err)
     });
-  } finally {
-    await client?.close();
   }
 });
 

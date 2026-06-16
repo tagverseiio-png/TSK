@@ -35,7 +35,7 @@ export default function WorkBonus() {
     }, []);
 
     // Duplicate logos for seamless infinite scrolling
-    const marqueeItems = [...logos, ...logos, ...logos, ...logos];
+    const marqueeItems = [...logos, ...logos];
 
     return (
         <div className="bg-[#15110f] relative z-30">
@@ -90,6 +90,8 @@ export default function WorkBonus() {
                                             src={logo} 
                                             alt={`Client Logo ${idx}`} 
                                             className="w-full h-full object-contain"
+                                            loading="lazy"
+                                            decoding="async"
                                         />
                                     </div>
                                 ))}

@@ -1,12 +1,10 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { MongoClient } from "mongodb";
 import { JWT_SECRET } from "../middleware/auth";
+import { getDb } from "../lib/db";
 
 const router = Router();
-const uri = process.env.MONGODB_URI!;
-const dbName = process.env.MONGODB_DB || "TSK";
 
 // POST /api/auth/login
 router.post("/login", async (req: Request, res: Response) => {
@@ -16,11 +14,8 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Email and password required" });
     }
 
-    const client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { db } = await getDb();
     const admin = await db.collection("adminUsers").findOne({ email });
-    await client.close();
 
     if (!admin) {
       return res.status(401).json({ error: "Invalid credentials" });

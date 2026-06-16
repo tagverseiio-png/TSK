@@ -1,28 +1,23 @@
 import { Router, Request, Response } from "express";
-import { MongoClient, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import { upload } from "../middleware/upload";
 import path from "path";
 import fs from "fs";
+import { getDb } from "../lib/db";
 
 const router = Router();
-const uri = process.env.MONGODB_URI!;
-const dbName = process.env.MONGODB_DB || "TSK";
 const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
 
 // ─── GET all clients (public) ──────────────────────────────────────────────────
 router.get("/", async (_req: Request, res: Response) => {
-  let client: MongoClient | null = null;
   try {
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { db } = await getDb();
     const clients = await db.collection("clients").find({}).sort({ order: 1, createdAt: -1 }).toArray();
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.json(clients);
   } catch (err) {
     return res.status(500).json({ error: "Failed to fetch clients" });
-  } finally {
-    await client?.close();
   }
 });
 
@@ -50,16 +45,13 @@ router.post(
 
 // ─── POST create client (admin) ──────────────────────────────────────────────
 router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
-  let client: MongoClient | null = null;
   try {
     const { name, logo, order } = req.body;
     if (!name || !logo) {
       return res.status(400).json({ error: "Name and logo are required" });
     }
 
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { db } = await getDb();
 
     const doc = {
       name,
@@ -73,19 +65,14 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
     return res.status(201).json({ ...doc, _id: result.insertedId });
   } catch (err) {
     return res.status(500).json({ error: "Failed to create client" });
-  } finally {
-    await client?.close();
   }
 });
 
 // ─── PUT update client (admin) ───────────────────────────────────────────────
 router.put("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
-  let client: MongoClient | null = null;
   try {
     const { id } = req.params;
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { db } = await getDb();
 
     const updates = { ...req.body, updatedAt: new Date() };
     delete updates._id;
@@ -100,19 +87,14 @@ router.put("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     return res.json(result);
   } catch (err) {
     return res.status(500).json({ error: "Failed to update client" });
-  } finally {
-    await client?.close();
   }
 });
 
 // ─── DELETE client (admin) ───────────────────────────────────────────────────
 router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
-  let client: MongoClient | null = null;
   try {
     const { id } = req.params;
-    client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db(dbName);
+    const { db } = await getDb();
 
     // Get client to delete physical file
     const clientDoc = await db.collection("clients").findOne({ _id: new ObjectId(id as string) });
@@ -128,8 +110,6 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: "Failed to delete client" });
-  } finally {
-    await client?.close();
   }
 });
 

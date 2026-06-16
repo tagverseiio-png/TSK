@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Volume2, VolumeX } from "lucide-react";
 
 const projects = [
@@ -41,9 +41,9 @@ export default function HomeVideo() {
     const [videoOpacity, setVideoOpacity] = useState(0);
     const videoRef = useRef<HTMLVideoElement>(null);
 
-    const nextVideo = () => {
+    const nextVideo = useCallback(() => {
         setActiveIndex((prev) => (prev + 1) % projects.length);
-    };
+    }, []);
 
     // Fade in on initial mount
     useEffect(() => {
@@ -60,13 +60,13 @@ export default function HomeVideo() {
             timer = setInterval(nextVideo, AUTO_ROTATE_TIME * 1000);
         }
         return () => clearInterval(timer);
-    }, [isMuted, activeIndex]);
+    }, [isMuted, activeIndex, nextVideo]);
 
     // Handle smooth source transitions
     useEffect(() => {
         if (activeIndex === displayIndex) return;
 
-        // Step 1: Fade out (asynchronously)
+        // Step 1: Fade out
         const frame = requestAnimationFrame(() => {
             setVideoOpacity(0);
         });
@@ -114,19 +114,22 @@ export default function HomeVideo() {
             <div className="absolute inset-0 z-[2] pointer-events-none bg-gradient-to-b from-[#15110f80] to-transparent h-[30rem]" />
             <div className="absolute bottom-0 left-0 w-full z-[2] pointer-events-none bg-gradient-to-t from-[#15110f] via-[#15110f]/80 to-transparent h-[30rem]" />
 
-            {/* Background Video */}
+            {/* Background Video — uses CSS transition instead of framer-motion */}
             <div className="absolute inset-0 z-[1] w-full h-full">
-                <motion.video
+                <video
                     ref={videoRef}
-                    animate={{ opacity: videoOpacity }}
-                    transition={{ duration: 0.5, ease: "easeInOut" }}
+                    style={{
+                        opacity: videoOpacity,
+                        transition: 'opacity 0.5s ease-in-out',
+                    }}
                     autoPlay
                     loop={isMuted}
                     muted={isMuted}
                     playsInline
+                    preload="auto"
                     onEnded={handleVideoEnd}
                     onLoadedMetadata={handleLoadedMetadata}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover will-change-[opacity]"
                     src={projects[displayIndex].video}
                 />
             </div>

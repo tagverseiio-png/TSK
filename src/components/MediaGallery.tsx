@@ -38,7 +38,7 @@ export default function MediaGallery({ items, maxHeight = "85vh", autoScroll = t
                 } else {
                     container.scrollBy({ top: container.clientHeight * 0.8, behavior: "smooth" });
                 }
-            }, 4000); // Cycle every 4 seconds
+            }, 6000); // Cycle every 6 seconds
         };
 
         startAutoScroll();
@@ -86,6 +86,7 @@ export default function MediaGallery({ items, maxHeight = "85vh", autoScroll = t
                                     alt={item.caption || `Media ${i + 1}`}
                                     className="w-full max-h-[60vh] object-contain bg-[#15110f]"
                                     loading="lazy"
+                                    decoding="async"
                                 />
                             </div>
                         ) : (

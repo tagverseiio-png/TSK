@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -125,25 +126,21 @@ export default function Navigation() {
             {/* Logo Section */}
             <div className="flex justify-end w-auto md:w-[20rem]">
                 <motion.div
-                    initial={{ 
-                        x: "-40vw", 
-                        y: "40vh", 
-                        scale: 2.5,
-                        opacity: 0 
-                    }}
+                    initial={{ opacity: 0, y: -20 }}
                     animate={{ 
-                        x: isLoaded ? 0 : "-40vw", 
-                        y: isLoaded ? 0 : "40vh", 
-                        scale: isLoaded ? 1 : 2.5,
-                        opacity: 1
+                        opacity: isLoaded ? 1 : 0, 
+                        y: isLoaded ? 0 : -20,
                     }}
-                    transition={{ duration: 1.5, ease: [0.76, 0, 0.24, 1] }}
+                    transition={{ duration: 0.8, ease: [0.76, 0, 0.24, 1] }}
                 >
                     <Link href="/">
-                        <img 
+                        <Image 
                             src="/IMG-20250512-WA0010-removebg-preview.png" 
-                            alt="TSK Logo" 
+                            alt="TSK Logo"
+                            width={120}
+                            height={60}
                             className="w-[4.5rem] md:w-[7.5rem] h-auto invert brightness-200"
+                            priority
                         />
                     </Link>
                 </motion.div>
