@@ -5,6 +5,38 @@ import fs from "fs";
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
+class AsyncQueue {
+  private queue: (() => Promise<any>)[] = [];
+  private processing = false;
+
+  add<T>(task: () => Promise<T>): Promise<T> {
+    return new Promise((resolve, reject) => {
+      this.queue.push(async () => {
+        try {
+          const res = await task();
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      });
+      this.processNext();
+    });
+  }
+
+  private async processNext() {
+    if (this.processing || this.queue.length === 0) return;
+    this.processing = true;
+    const task = this.queue.shift();
+    if (task) {
+      await task();
+    }
+    this.processing = false;
+    this.processNext();
+  }
+}
+
+export const videoQueue = new AsyncQueue();
+
 export function compressStandard(
   inputPath: string,
   outputPath: string,
@@ -15,7 +47,8 @@ export function compressStandard(
       .videoFilters("scale='min(1280,iw)':-2")
       .outputOptions([
         "-c:v libx264",
-        "-preset slow",
+        "-preset fast",
+        "-threads 2",
         "-crf 28",
         "-maxrate 1500k",
         "-bufsize 3000k",
@@ -105,7 +138,8 @@ export function generateVariant(
       .videoFilters(scale)
       .outputOptions([
         "-c:v libx264",
-        "-preset medium",
+        "-preset fast",
+        "-threads 2",
         "-crf " + crf,
         "-maxrate " + maxrate,
         "-bufsize " + bufsize,
@@ -140,6 +174,8 @@ export function generateHLSVariant(
       .outputOptions([
         "-c:v libx264",
         "-profile:v main",
+        "-preset fast",
+        "-threads 2",
         "-crf " + crf,
         "-maxrate " + maxrate,
         "-bufsize " + bufsize,
@@ -156,112 +192,114 @@ export function generateHLSVariant(
   });
 }
 
-export async function processVideoPipeline(
+export function processVideoPipeline(
   inputPath: string,
   outputDir: string,
   baseFilename: string,
   hlsOutputDir: string,
   onStepProgress?: (step: string, percent: number) => void
 ) {
-  const stdFilename = `${baseFilename}_compressed.mp4`;
-  const highFilename = `${baseFilename}_high.mp4`;
-  const lowFilename = `${baseFilename}_low.mp4`;
-  const posterFilename = `${baseFilename}_poster.webp`;
+  return videoQueue.add(async () => {
+    const stdFilename = `${baseFilename}_compressed.mp4`;
+    const highFilename = `${baseFilename}_high.mp4`;
+    const lowFilename = `${baseFilename}_low.mp4`;
+    const posterFilename = `${baseFilename}_poster.webp`;
 
-  const stdPath = path.join(outputDir, stdFilename);
-  const highPath = path.join(outputDir, highFilename);
-  const lowPath = path.join(outputDir, lowFilename);
-  const posterPath = path.join(outputDir, posterFilename);
+    const stdPath = path.join(outputDir, stdFilename);
+    const highPath = path.join(outputDir, highFilename);
+    const lowPath = path.join(outputDir, lowFilename);
+    const posterPath = path.join(outputDir, posterFilename);
 
-  // 1. Poster Frame extraction
-  onStepProgress?.("poster", 0);
-  await generatePoster(inputPath, posterPath);
-  onStepProgress?.("poster", 100);
+    // 1. Poster Frame extraction
+    onStepProgress?.("poster", 0);
+    await generatePoster(inputPath, posterPath);
+    onStepProgress?.("poster", 100);
 
-  // 2. Compress Standard (1280p max, CRF 28)
-  onStepProgress?.("standard", 0);
-  await compressStandard(inputPath, stdPath, (pct) => onStepProgress?.("standard", pct));
-  onStepProgress?.("standard", 100);
+    // 2. Compress Standard (1280p max, CRF 28)
+    onStepProgress?.("standard", 0);
+    await compressStandard(inputPath, stdPath, (pct) => onStepProgress?.("standard", pct));
+    onStepProgress?.("standard", 100);
 
-  // 3. High variant (1280p, CRF 26, 2000k)
-  onStepProgress?.("high", 0);
-  await generateVariant(
-    inputPath,
-    highPath,
-    "scale='min(1280,iw)':-2",
-    26,
-    "2000k",
-    "4000k",
-    "128k",
-    (pct) => onStepProgress?.("high", pct)
-  );
-  onStepProgress?.("high", 100);
+    // 3. High variant (1280p, CRF 26, 2000k)
+    onStepProgress?.("high", 0);
+    await generateVariant(
+      inputPath,
+      highPath,
+      "scale='min(1280,iw)':-2",
+      26,
+      "2000k",
+      "4000k",
+      "128k",
+      (pct) => onStepProgress?.("high", pct)
+    );
+    onStepProgress?.("high", 100);
 
-  // 4. Low variant (720p, CRF 30, 800k)
-  onStepProgress?.("low", 0);
-  await generateVariant(
-    inputPath,
-    lowPath,
-    "scale='min(720,iw)':-2",
-    30,
-    "800k",
-    "1600k",
-    "96k",
-    (pct) => onStepProgress?.("low", pct)
-  );
-  onStepProgress?.("low", 100);
+    // 4. Low variant (720p, CRF 30, 800k)
+    onStepProgress?.("low", 0);
+    await generateVariant(
+      inputPath,
+      lowPath,
+      "scale='min(720,iw)':-2",
+      30,
+      "800k",
+      "1600k",
+      "96k",
+      (pct) => onStepProgress?.("low", pct)
+    );
+    onStepProgress?.("low", 100);
 
-  // 5. HLS streaming (720p and 480p variants)
-  onStepProgress?.("hls", 0);
-  if (!fs.existsSync(hlsOutputDir)) {
-    fs.mkdirSync(hlsOutputDir, { recursive: true });
-  }
+    // 5. HLS streaming (720p and 480p variants)
+    onStepProgress?.("hls", 0);
+    if (!fs.existsSync(hlsOutputDir)) {
+      fs.mkdirSync(hlsOutputDir, { recursive: true });
+    }
 
-  const hls720Path = path.join(hlsOutputDir, "720p.m3u8");
-  const hls480Path = path.join(hlsOutputDir, "480p.m3u8");
+    const hls720Path = path.join(hlsOutputDir, "720p.m3u8");
+    const hls480Path = path.join(hlsOutputDir, "480p.m3u8");
 
-  await generateHLSVariant(
-    inputPath,
-    hls720Path,
-    "scale='min(1280,iw)':-2",
-    28,
-    "1000k",
-    "2000k",
-    path.join(hlsOutputDir, "720p_%03d.ts")
-  );
-  onStepProgress?.("hls", 50);
+    await generateHLSVariant(
+      inputPath,
+      hls720Path,
+      "scale='min(1280,iw)':-2",
+      28,
+      "1000k",
+      "2000k",
+      path.join(hlsOutputDir, "720p_%03d.ts")
+    );
+    onStepProgress?.("hls", 50);
 
-  await generateHLSVariant(
-    inputPath,
-    hls480Path,
-    "scale='min(854,iw)':-2",
-    32,
-    "500k",
-    "1000k",
-    path.join(hlsOutputDir, "480p_%03d.ts")
-  );
-  onStepProgress?.("hls", 100);
+    await generateHLSVariant(
+      inputPath,
+      hls480Path,
+      "scale='min(854,iw)':-2",
+      32,
+      "500k",
+      "1000k",
+      path.join(hlsOutputDir, "480p_%03d.ts")
+    );
+    onStepProgress?.("hls", 100);
 
-  // Write master playlist
-  const masterContent = `#EXTM3U
+    // Write master playlist
+    const masterContent = `#EXTM3U
 #EXT-X-VERSION:3
 #EXT-X-STREAM-INF:BANDWIDTH=1200000,RESOLUTION=1280x720
 720p.m3u8
 #EXT-X-STREAM-INF:BANDWIDTH=600000,RESOLUTION=854x480
 480p.m3u8
 `;
-  fs.writeFileSync(path.join(hlsOutputDir, "master.m3u8"), masterContent, "utf-8");
+    fs.writeFileSync(path.join(hlsOutputDir, "master.m3u8"), masterContent, "utf-8");
 
-  // Clean up original file
-  if (fs.existsSync(inputPath)) {
-    fs.unlinkSync(inputPath);
-  }
+    // Clean up original file
+    if (fs.existsSync(inputPath)) {
+      fs.unlinkSync(inputPath);
+    }
 
-  return {
-    standard: stdFilename,
-    high: highFilename,
-    low: lowFilename,
-    poster: posterFilename,
-    hlsMaster: "master.m3u8"
-  };
+    return {
+      standard: stdFilename,
+      high: highFilename,
+      low: lowFilename,
+      poster: posterFilename,
+      hlsMaster: "master.m3u8"
+    };
+  });
 }
