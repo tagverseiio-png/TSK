@@ -77,13 +77,20 @@ router.post(
           const posterFilename = `${baseFilename}_poster.webp`;
           const hlsMaster = "master.m3u8";
 
-          // Start background processing
-          processVideoPipeline(
-            inputPath,
-            outputDir,
-            baseFilename,
-            hlsOutputDir
-          ).catch((e) => console.error("Background video processing failed:", e));
+          // Start background processing via dedicated Video Worker using IPC
+          if (process.send) {
+            process.send({
+              type: "PROCESS_VIDEO",
+              payload: {
+                inputPath,
+                outputDir,
+                baseFilename,
+                hlsOutputDir
+              }
+            });
+          } else {
+            console.error("IPC process.send not available. Video will not be processed.");
+          }
 
           results.push({
             type: "video",
@@ -212,10 +219,20 @@ router.post("/assemble-chunks", requireAuth, async (req: AuthRequest, res: Respo
       const posterFilename = `${baseFilename}_poster.webp`;
       const hlsMaster = "master.m3u8";
 
-      // Start processing in background
-      processVideoPipeline(
-        finalPath, worksDir, baseFilename, hlsOutputDir
-      ).catch(err => console.error("Background video processing failed:", err));
+      // Start background processing via dedicated Video Worker using IPC
+      if (process.send) {
+        process.send({
+          type: "PROCESS_VIDEO",
+          payload: {
+            inputPath: finalPath,
+            outputDir: worksDir,
+            baseFilename,
+            hlsOutputDir
+          }
+        });
+      } else {
+        console.error("IPC process.send not available. Video will not be processed.");
+      }
 
       return res.json({
         type: "video",

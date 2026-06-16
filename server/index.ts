@@ -4,8 +4,9 @@ import path from "path";
 import compression from "compression";
 import dotenv from "dotenv";
 import fs from "fs";
+import cluster from "cluster";
+import os from "os";
 
-//hi
 // Load .env.local for local dev, fall back to .env for production
 const envLocalPath = path.resolve(__dirname, "../.env.local");
 const envPath = path.resolve(__dirname, "../.env");
@@ -24,100 +25,137 @@ import clientsRoutes from "./routes/clients";
 import servicesRoutes from "./routes/services";
 import storageRoutes from "./routes/storage";
 
-const app = express();
 const PORT = process.env.SERVER_PORT || 4000;
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "https://tsk-alpha.vercel.app",
-  "https://tskapi.t4gverse.com",
-  "https://thesimplekrew.com",
-  "https://www.thesimplekrew.com",
-  process.env.FRONTEND_URL,
-  process.env.NEXT_PUBLIC_URL,
-].filter(Boolean) as string[];
+if (cluster.isPrimary) {
+  console.log(`\n👑 Primary Load Balancer (PID ${process.pid}) is running`);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
+  // 1. Fork Dedicated Video Worker
+  const videoWorker = cluster.fork({ WORKER_TYPE: "video" });
+  console.log(`🎬 Dedicated Video Worker spawned (PID ${videoWorker.process.pid})`);
 
-      // Bulletproof check for frontend domains
-      if (
-        origin.includes("localhost") || 
-        origin.includes("127.0.0.1") ||
-        origin.includes("thesimplekrew.com") || 
-        origin.includes("vercel.app") ||
-        origin === process.env.FRONTEND_URL ||
-        origin === process.env.NEXT_PUBLIC_URL
-      ) {
-        callback(null, true);
-      } else {
-        callback(null, false); // Block other origins
+  videoWorker.on("message", (msg) => {
+    console.log("[Video Worker Message]", msg);
+  });
+
+  // 2. Fork Web Workers
+  const numCPUs = os.cpus().length;
+  // Cap at 4 web workers locally to prevent overloading the dev machine
+  const webWorkersCount = Math.min(numCPUs, process.env.NODE_ENV === "production" ? numCPUs : 4);
+  
+  for (let i = 0; i < webWorkersCount; i++) {
+    const webWorker = cluster.fork({ WORKER_TYPE: "web" });
+    
+    // 3. Setup IPC Routing: route PROCESS_VIDEO from web worker to video worker
+    webWorker.on("message", (msg: any) => {
+      if (msg.type === "PROCESS_VIDEO") {
+        console.log(`⚡ Routing video job from Web Worker ${webWorker.process.pid} to Video Worker...`);
+        videoWorker.send(msg);
       }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-upload-folder"],
-  })
-);
+    });
+  }
 
-// ─── Compression ──────────────────────────────────────────────────────────────
-app.use(compression());
+  // Handle worker crashes
+  cluster.on("exit", (worker, code, signal) => {
+    console.log(`❌ Worker ${worker.process.pid} died. (Signal: ${signal}, Code: ${code})`);
+    
+    // We can respawn workers if needed, but typically a process manager like PM2 handles restarts.
+    // If you want simple auto-restart, you'd check worker.id and fork the appropriate type again.
+  });
 
-// ─── Body parsers ─────────────────────────────────────────────────────────────
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+} else if (process.env.WORKER_TYPE === "video") {
+  // ─── DEDICATED VIDEO WORKER ──────────────────────────────────────────────────
+  require("./worker");
+} else {
+  // ─── WEB WORKER (EXPRESS APP) ────────────────────────────────────────────────
+  const app = express();
 
-// ─── Static media files ───────────────────────────────────────────────────────
-// Serve uploaded images/videos at http://localhost:4000/uploads/...
-app.use("/uploads/services", express.static(path.join(__dirname, "uploads/services")));
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "uploads"), {
-    maxAge: 31536000000, // 1 year caching for videos/images
-    immutable: true,
-    setHeaders: (res, filePath) => {
-      if (filePath.match(/\.(mp4|webm|mov|avi)$/i)) {
-        res.setHeader("Accept-Ranges", "bytes");
-        res.setHeader("Content-Type", "video/mp4");
-      }
-      if (filePath.endsWith(".m3u8")) {
-        res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
-        res.setHeader("Cache-Control", "no-cache");
-      }
-      if (filePath.endsWith(".ts")) {
-        res.setHeader("Content-Type", "video/mp2t");
-      }
-    },
-  })
-);
+  // ─── CORS ─────────────────────────────────────────────────────────────────────
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://tsk-alpha.vercel.app",
+    "https://tskapi.t4gverse.com",
+    "https://thesimplekrew.com",
+    "https://www.thesimplekrew.com",
+    process.env.FRONTEND_URL,
+    process.env.NEXT_PUBLIC_URL,
+  ].filter(Boolean) as string[];
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
-app.use("/api/auth", authRoutes);
-app.use("/api/works", worksRoutes);
-app.use("/api/bookings", bookingsRoutes);
-app.use("/api/studio-config", studioConfigRoutes);
-app.use("/api/availability", availabilityRoutes);
-app.use("/api/clients", clientsRoutes);
-app.use("/api/services", servicesRoutes);
-app.use("/api/storage", storageRoutes);
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
 
-// ─── Health check ─────────────────────────────────────────────────────────────
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
+        // Bulletproof check for frontend domains
+        if (
+          origin.includes("localhost") || 
+          origin.includes("127.0.0.1") ||
+          origin.includes("thesimplekrew.com") || 
+          origin.includes("vercel.app") ||
+          origin === process.env.FRONTEND_URL ||
+          origin === process.env.NEXT_PUBLIC_URL
+        ) {
+          callback(null, true);
+        } else {
+          callback(null, false); // Block other origins
+        }
+      },
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-upload-folder"],
+    })
+  );
 
-// ─── Start ────────────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n🚀 TSK API Server running on http://localhost:${PORT}`);
-  console.log(`   📁 Uploads served at http://localhost:${PORT}/uploads/`);
-  console.log(`   🔐 Admin: /api/auth/login`);
-  console.log(`   🎬 Works: /api/works`);
-  console.log(`   📅 Bookings: /api/bookings\n`);
-});
+  // ─── Compression ──────────────────────────────────────────────────────────────
+  app.use(compression());
 
-export default app;
+  // ─── Body parsers ─────────────────────────────────────────────────────────────
+  app.use(express.json({ limit: "10mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+  // ─── Static media files ───────────────────────────────────────────────────────
+  // Serve uploaded images/videos at http://localhost:4000/uploads/...
+  app.use("/uploads/services", express.static(path.join(__dirname, "uploads/services")));
+  app.use(
+    "/uploads",
+    express.static(path.join(__dirname, "uploads"), {
+      maxAge: 31536000000, // 1 year caching for videos/images
+      immutable: true,
+      setHeaders: (res, filePath) => {
+        if (filePath.match(/\.(mp4|webm|mov|avi)$/i)) {
+          res.setHeader("Accept-Ranges", "bytes");
+          res.setHeader("Content-Type", "video/mp4");
+        }
+        if (filePath.endsWith(".m3u8")) {
+          res.setHeader("Content-Type", "application/vnd.apple.mpegurl");
+          res.setHeader("Cache-Control", "no-cache");
+        }
+        if (filePath.endsWith(".ts")) {
+          res.setHeader("Content-Type", "video/mp2t");
+        }
+      },
+    })
+  );
+
+  // ─── Routes ───────────────────────────────────────────────────────────────────
+  app.use("/api/auth", authRoutes);
+  app.use("/api/works", worksRoutes);
+  app.use("/api/bookings", bookingsRoutes);
+  app.use("/api/studio-config", studioConfigRoutes);
+  app.use("/api/availability", availabilityRoutes);
+  app.use("/api/clients", clientsRoutes);
+  app.use("/api/services", servicesRoutes);
+  app.use("/api/storage", storageRoutes);
+
+  // ─── Health check ─────────────────────────────────────────────────────────────
+  app.get("/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // ─── Start ────────────────────────────────────────────────────────────────────
+  app.listen(PORT, () => {
+    console.log(`\n🚀 TSK API Server (Web Worker PID ${process.pid}) running on http://localhost:${PORT}`);
+  });
+}
