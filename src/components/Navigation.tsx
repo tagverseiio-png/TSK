@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export default function Navigation() {
@@ -40,7 +40,7 @@ export default function Navigation() {
 
     return (
         <motion.nav
-            className="fixed top-0 left-0 w-full z-[100] p-6 md:p-[2.5rem] flex justify-between items-center mix-blend-difference text-white uppercase font-monument text-[13px] font-bold tracking-[0.8px] leading-[1.3]"
+            className="fixed top-0 left-0 w-full z-[100] p-6 md:p-[2.5rem] flex justify-between items-center drop-shadow-md text-white uppercase font-monument text-[13px] font-bold tracking-[0.8px] leading-[1.3]"
         >
             {/* Gradient backdrop */}
             <div className="absolute top-0 left-0 w-full h-[150%] bg-gradient-to-b from-black/20 to-transparent pointer-events-none -z-10 mix-blend-normal opacity-50 transition-opacity duration-300" />

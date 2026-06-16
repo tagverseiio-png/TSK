@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -103,14 +103,14 @@ function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
             </div>
 
 {/* Hover Image Reveal */}
-            {item.image && item.image.trim() && (
-            <div className='absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden mix-blend-screen z-10 w-full h-full'>
+            {item.image && item.image.trim() && item.image !== "undefined" && item.image !== "null" && (item.image.startsWith("/") || item.image.startsWith("http")) && (
+            <div className='absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden z-10 w-full h-full'>
                 <Image 
                     src={item.image} 
                     alt={item.firstName} 
                     fill
                     sizes='50vw'
-                    className='w-[60%] md:w-[35%] h-auto object-cover blur-[2px] filter grayscale opacity-[0.15] transition-all duration-700 ease-out will-change-transform' 
+                    className='w-[60%] md:w-[35%] h-auto object-cover opacity-[0.15] transition-all duration-700 ease-out will-change-transform' 
                 />
             </div>
             )}

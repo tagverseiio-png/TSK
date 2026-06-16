@@ -8,6 +8,7 @@ import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { processVideoPipeline } from "../utils/videoProcessor";
 import { getDb } from "../lib/db";
+import { getCached, invalidateCache } from "../lib/cache";
 
 const router = Router();
 const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
@@ -15,8 +16,10 @@ const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
 // ─── GET all works (public) ───────────────────────────────────────────────────
 router.get("/", async (_req: Request, res: Response) => {
   try {
-    const { db } = await getDb();
-    const works = await db.collection("caseStudies").find({}).sort({ number: 1 }).toArray();
+    const works = await getCached("works_all", 60, async () => {
+      const { db } = await getDb();
+      return db.collection("caseStudies").find({}).sort({ number: 1 }).toArray();
+    });
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.json(works);
   } catch (err) {
@@ -31,8 +34,10 @@ router.get("/", async (_req: Request, res: Response) => {
 // ─── GET single work by slug (public) ────────────────────────────────────────
 router.get("/:slug", async (req: Request, res: Response) => {
   try {
-    const { db } = await getDb();
-    const work = await db.collection("caseStudies").findOne({ slug: req.params.slug });
+    const work = await getCached("works_" + req.params.slug, 60, async () => {
+      const { db } = await getDb();
+      return db.collection("caseStudies").findOne({ slug: req.params.slug });
+    });
     if (!work) return res.status(404).json({ error: "Not found" });
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.json(work);
@@ -275,6 +280,7 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
     };
 
     const result = await db.collection("caseStudies").insertOne(doc);
+    invalidateCache("works_");
     return res.status(201).json({ ...doc, _id: result.insertedId });
   } catch (err) {
     console.error("Create work error:", err);
@@ -305,6 +311,7 @@ router.put("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     );
 
     if (!result) return res.status(404).json({ error: "Not found" });
+    invalidateCache("works_");
     return res.json(result);
   } catch (err) {
     console.error("Update work error:", err);
@@ -362,6 +369,7 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     }
 
     await db.collection("caseStudies").deleteOne({ _id: new ObjectId(id as string) });
+    invalidateCache("works_");
     return res.json({ success: true });
   } catch (err) {
     console.error("Delete work error:", err);

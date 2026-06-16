@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import { upload } from "../middleware/upload";
 import { getDb } from "../lib/db";
+import { getCached, invalidateCache } from "../lib/cache";
 
 const router = Router();
 const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
@@ -10,8 +11,10 @@ const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
 // ─── GET all services ─────────────────────────────────────────────────────────
 router.get('/', async (_req: Request, res: Response) => {
   try {
-    const { db } = await getDb();
-    const services = await db.collection('services').find({}).sort({ number: 1 }).toArray();
+    const services = await getCached("services_all", 60, async () => {
+      const { db } = await getDb();
+      return db.collection('services').find({}).sort({ number: 1 }).toArray();
+    });
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.json(services);
   } catch (err) {
@@ -26,8 +29,10 @@ router.get('/', async (_req: Request, res: Response) => {
 // ─── GET single service by slug ──────────────────────────────────────────────
 router.get("/:slug", async (req: Request, res: Response) => {
   try {
-    const { db } = await getDb();
-    const service = await db.collection("services").findOne({ slug: req.params.slug });
+    const service = await getCached("services_" + req.params.slug, 60, async () => {
+      const { db } = await getDb();
+      return db.collection("services").findOne({ slug: req.params.slug });
+    });
     if (!service) return res.status(404).json({ error: "Not found" });
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.json(service);
@@ -78,10 +83,12 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
         { _id: new ObjectId(_id as string) },
         { $set: doc }
       );
+      invalidateCache("services_");
       return res.json({ ...doc, _id });
     } else {
       (doc as any).createdAt = new Date();
       const result = await db.collection("services").insertOne(doc);
+      invalidateCache("services_");
       return res.status(201).json({ ...doc, _id: result.insertedId });
     }
   } catch (err) {
@@ -98,6 +105,7 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const { db } = await getDb();
     await db.collection("services").deleteOne({ _id: new ObjectId(req.params.id as string) });
+    invalidateCache("services_");
     return res.json({ success: true });
   } catch (err) {
     console.error("Delete service error:", err);

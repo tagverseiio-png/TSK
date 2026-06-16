@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { Users, Loader } from "lucide-react";
 
 // Fallback skeleton logos if none exist yet
@@ -84,7 +84,7 @@ export default function WorkBonus() {
                                 {marqueeItems.map((logo, idx) => (
                                     <div 
                                         key={idx} 
-                                        className="w-40 md:w-56 h-16 md:h-24 flex-shrink-0 flex items-center justify-center mx-4 md:mx-8 grayscale hover:grayscale-0 opacity-50 hover:opacity-100 transition-all duration-300"
+                                        className="w-40 md:w-56 h-16 md:h-24 flex-shrink-0 flex items-center justify-center mx-4 md:mx-8 opacity-50 hover:opacity-100 transition-all duration-300"
                                     >
                                         <img 
                                             src={logo} 

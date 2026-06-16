@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { Play } from "lucide-react";
 import VideoPlayer from "./VideoPlayer";
 

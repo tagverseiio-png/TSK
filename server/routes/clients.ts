@@ -5,6 +5,7 @@ import { upload } from "../middleware/upload";
 import path from "path";
 import fs from "fs";
 import { getDb } from "../lib/db";
+import { getCached, invalidateCache } from "../lib/cache";
 
 const router = Router();
 const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
@@ -12,8 +13,11 @@ const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
 // ─── GET all clients (public) ──────────────────────────────────────────────────
 router.get("/", async (_req: Request, res: Response) => {
   try {
-    const { db } = await getDb();
-    const clients = await db.collection("clients").find({}).sort({ order: 1, createdAt: -1 }).toArray();
+    const clients = await getCached("clients_all", 60, async () => {
+      const { db } = await getDb();
+      return db.collection("clients").find({}).sort({ order: 1, createdAt: -1 }).toArray();
+    });
+    
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     return res.json(clients);
   } catch (err) {
@@ -62,6 +66,7 @@ router.post("/", requireAuth, async (req: AuthRequest, res: Response) => {
     };
 
     const result = await db.collection("clients").insertOne(doc);
+    invalidateCache("clients_");
     return res.status(201).json({ ...doc, _id: result.insertedId });
   } catch (err) {
     return res.status(500).json({ error: "Failed to create client" });
@@ -84,6 +89,7 @@ router.put("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     );
 
     if (!result) return res.status(404).json({ error: "Not found" });
+    invalidateCache("clients_");
     return res.json(result);
   } catch (err) {
     return res.status(500).json({ error: "Failed to update client" });
@@ -107,6 +113,7 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
     }
 
     await db.collection("clients").deleteOne({ _id: new ObjectId(id as string) });
+    invalidateCache("clients_");
     return res.json({ success: true });
   } catch (err) {
     return res.status(500).json({ error: "Failed to delete client" });

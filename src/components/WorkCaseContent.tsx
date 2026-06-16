@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion, AnimatePresence, PanInfo } from "framer-motion";
+import { m as motion, AnimatePresence, PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import VideoPlayer from "./VideoPlayer";
 
@@ -149,7 +149,7 @@ export default function WorkCaseContent({
                         src={study.bgImage || 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?q=80&w=2000'}
                         alt="Background"
                         fill
-                        className="object-cover opacity-[0.10] filter grayscale scale-110"
+                        className="object-cover opacity-[0.10] scale-110"
                         priority
                     />
                     <div className="absolute inset-0 bg-[#0D0D0D] opacity-[0.94]" />
@@ -235,7 +235,7 @@ export default function WorkCaseContent({
                                         src={study.media[currentIndex].src}
                                         alt={study.media[currentIndex].caption || ''}
                                         fill
-                                        className="w-full h-full object-cover grayscale-[0.3] group-hover:grayscale-0 transition-all duration-1000 will-change-transform"
+                                        className="w-full h-full object-cover will-change-transform"
                                         priority
                                     />
                                 ) : (

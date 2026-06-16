@@ -5,6 +5,7 @@ import NoiseOverlayWrapper from "@/components/NoiseOverlayWrapper";
 import NavigationWrapper from "@/components/NavigationWrapper";
 
 import SmoothScroll from "@/components/SmoothScroll";
+import MotionProvider from "@/components/MotionProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -48,14 +49,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable}`} suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href={process.env.NEXT_PUBLIC_API_URL || "https://tsk-alpha.vercel.app"} crossOrigin="anonymous" />
+      </head>
       <body className="antialiased bg-brand-black text-brand-white selection:bg-brand-orange selection:text-white overflow-x-hidden min-h-screen" suppressHydrationWarning>
-        <SmoothScroll>
-          <NoiseOverlayWrapper />
-          <NavigationWrapper />
-          <main className="relative z-10 w-full h-full">
-            {children}
-          </main>
-        </SmoothScroll>
+        <MotionProvider>
+          <SmoothScroll>
+            <NoiseOverlayWrapper />
+            <NavigationWrapper />
+            <main className="relative z-10 w-full h-full">
+              {children}
+            </main>
+          </SmoothScroll>
+        </MotionProvider>
       </body>
     </html>
   );

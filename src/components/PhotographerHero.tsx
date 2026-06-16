@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 
 export default function PhotographerHero({ title, bio, number }: { title: string, bio: string, number: string }) {
 
