@@ -60,7 +60,11 @@ router.get("/drive-stream/:id", async (req: Request, res: Response) => {
         cookieStr = res1.headers.get("set-cookie") || "";
         
         if (loc) {
-          const res2 = await fetch(loc, { headers: { Cookie: cookieStr } });
+          const controller = new AbortController();
+          const res2 = await fetch(loc, { 
+            headers: { Cookie: cookieStr },
+            signal: controller.signal
+          });
           const contentType = res2.headers.get("content-type") || "";
           
           if (contentType.includes("text/html")) {
@@ -71,9 +75,8 @@ router.get("/drive-stream/:id", async (req: Request, res: Response) => {
               driveUrlCache.set(id, { url: finalUrl, cookieStr, expiry: now + DRIVE_CACHE_TTL });
             }
           } else {
-            if (res2.body && typeof (res2.body as any).cancel === "function") {
-              (res2.body as any).cancel();
-            }
+            // Aggressively abort the fetch so Node doesn't download the 60MB video in the background!
+            controller.abort();
             finalUrl = loc;
             driveUrlCache.set(id, { url: finalUrl, cookieStr, expiry: now + DRIVE_CACHE_TTL });
           }
@@ -108,6 +111,12 @@ router.get("/drive-stream/:id", async (req: Request, res: Response) => {
       res.setHeader("access-control-allow-origin", "*");
 
       proxyRes.pipe(res);
+
+      req.on("close", () => {
+        if (!proxyRes.destroyed) {
+          proxyRes.destroy();
+        }
+      });
     }).on("error", (err) => {
       console.error("Stream pipe error:", err);
       if (!res.headersSent) res.status(500).end();
