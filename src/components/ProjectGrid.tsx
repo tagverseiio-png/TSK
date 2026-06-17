@@ -57,7 +57,7 @@ export default function ProjectGrid({ title, projects, basePath }: { title: stri
                         transition={{ duration: 0.6 }}
                         className="group block overflow-hidden rounded-[2rem] bg-[#15110f] break-inside-avoid"
                     >
-                        <Link href={`/${basePath}/${proj.slug}`} className="block w-full h-full cursor-pointer">
+                        <Link prefetch={false} href={`/${basePath}/${proj.slug}`} className="block w-full h-full cursor-pointer">
                             <div className="relative w-full aspect-[4/5] md:h-[40rem] overflow-hidden rounded-[2rem]">
                                 <motion.div
                                     className="relative w-full h-full"
