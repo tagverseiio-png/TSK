@@ -240,15 +240,26 @@ export default function WorkCaseContent({
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-black relative">
-                                        <VideoPlayer
-                                            src={study.media[currentIndex].src}
-                                            srcHigh={study.media[currentIndex].srcHigh}
-                                            srcLow={study.media[currentIndex].srcLow}
-                                            poster={study.media[currentIndex].poster}
-                                            hlsUrl={study.media[currentIndex].hlsUrl}
-                                            className="w-full h-full object-cover"
-                                            controls
-                                        />
+                                        {(!study.media[currentIndex].src.startsWith("http") && !study.media[currentIndex].src.startsWith("/") && !study.media[currentIndex].src.includes(".")) ? (
+                                            <iframe
+                                                src={`https://drive.google.com/file/d/${study.media[currentIndex].src}/preview`}
+                                                className="w-full h-full"
+                                                style={{ border: "none" }}
+                                                allow="autoplay; encrypted-media"
+                                                allowFullScreen
+                                                loading="lazy"
+                                            />
+                                        ) : (
+                                            <VideoPlayer
+                                                src={study.media[currentIndex].src}
+                                                srcHigh={study.media[currentIndex].srcHigh}
+                                                srcLow={study.media[currentIndex].srcLow}
+                                                poster={study.media[currentIndex].poster}
+                                                hlsUrl={study.media[currentIndex].hlsUrl}
+                                                className="w-full h-full object-cover"
+                                                controls
+                                            />
+                                        )}
                                     </div>
                                 )}
                             </motion.div>
