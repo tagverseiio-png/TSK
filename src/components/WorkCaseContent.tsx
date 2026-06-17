@@ -251,7 +251,7 @@ export default function WorkCaseContent({
                                     <div className="w-full h-full bg-black relative">
                                         {(!item.src.startsWith("http") && !item.src.startsWith("/") && !item.src.includes(".")) ? (
                                             <VideoPlayer
-                                                src={`/api/works/drive-stream/${item.src}`}
+                                                src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/works/drive-stream/${item.src}`}
                                                 className="w-full h-full object-cover"
                                                 controls
                                                 autoPlay={currentIndex === index}
