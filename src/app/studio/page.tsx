@@ -25,6 +25,7 @@ async function getStudioConfig() {
       whatsappNumber: config.whatsappNumber || "6588359374",
       contactEmail: config.contactEmail || "admin@thesimplekrew.com",
       timeSlots: config.timeSlots || ["10:00 AM", "01:00 PM", "04:00 PM", "07:00 PM"],
+      minBookableDate: config.minBookableDate || "",
     };
   } catch (err) {
     console.error("[studio] Failed to fetch config, using defaults:", err);
@@ -39,6 +40,7 @@ async function getStudioConfig() {
       whatsappNumber: "6588359374",
       contactEmail: "admin@thesimplekrew.com",
       timeSlots: ["10:00 AM", "01:00 PM", "04:00 PM", "07:00 PM"],
+      minBookableDate: "",
     };
   }
 }

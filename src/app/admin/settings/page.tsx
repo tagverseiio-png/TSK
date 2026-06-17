@@ -24,6 +24,7 @@ export default function AdminSettingsPage() {
     contactEmail: "admin@thesimplekrew.com",
     timeSlots: [] as string[],
     clientLogos: [] as string[],
+    minBookableDate: "",
   });
 
   useEffect(() => {
@@ -183,6 +184,21 @@ export default function AdminSettingsPage() {
             >
               <Plus size={18} />
             </button>
+          </div>
+        </div>
+
+        {/* Availability */}
+        <div className="bg-white/[0.02] border border-white/8 rounded-2xl p-6 space-y-4">
+          <h2 className="font-monument text-sm text-white/60 uppercase tracking-widest">Availability Restrictions</h2>
+          <div className="space-y-2">
+            <label className="text-[10px] text-brand-orange uppercase tracking-widest">Minimum Selectable Date</label>
+            <input
+              type="date"
+              className={inputCls}
+              value={(config as any).minBookableDate || ""}
+              onChange={(e) => setConfig((c) => ({ ...c, minBookableDate: e.target.value }))}
+            />
+            <p className="text-white/20 text-xs">If set, users cannot book any date before this. Useful for blocking out whole months (e.g., set to July 1st to block June).</p>
           </div>
         </div>
 

@@ -16,6 +16,7 @@ export interface StudioConfig {
   whatsappNumber: string;
   contactEmail?: string;
   timeSlots: string[];
+  minBookableDate?: string;
 }
 
 const STEPS = [
@@ -62,6 +63,12 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
   }, [formData.date, timeSlots]);
 
   const isAllSlotsFull = formData.date && lockedSlots.length >= timeSlots.length;
+
+  // Calculate minimum bookable date dynamically based on config
+  const today = new Date().toISOString().split("T")[0];
+  const minDate = config.minBookableDate && config.minBookableDate > today 
+    ? config.minBookableDate 
+    : today;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -232,7 +239,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                         required
                         type="date"
                         name="date"
-                        min={new Date().toISOString().split("T")[0]}
+                        min={minDate}
                         value={formData.date}
                         onChange={handleInputChange}
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-brand-orange transition-all hover:bg-white/10"

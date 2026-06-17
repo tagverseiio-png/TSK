@@ -59,13 +59,7 @@ export default function ContactPage() {
                                         <a href="mailto:admin@thesimplekrew.com" className="hover:text-white transition-colors">7 Cuff Road</a>
                                     </div>
                                 </li>
-                                <li className="flex flex-col gap-1 mix-blend-difference text-white">
-                                    <p className="text-[16px]">Malaysia / India</p>
-                                    <p className="text-white/60 text-[14px] font-medium uppercase tracking-wider">Regional Hubs</p>
-                                    <div className="flex gap-4 mt-2 text-[14px] text-brand-orange font-medium">
-                                        <a href="mailto:admin@thesimplekrew.com" className="hover:text-white transition-colors border-b border-brand-orange/20 pb-1">admin@thesimplekrew.com</a>
-                                    </div>
-                                </li>
+
                             </ul>
                         </article>
                     </div>

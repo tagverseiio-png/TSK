@@ -89,9 +89,16 @@ export default function WorkCaseContent({
     // Auto slideshow logic
     useEffect(() => {
         if (!isAutoPlaying) return;
+
+        // Do not auto-advance if the current item is a video, 
+        // to prevent interrupting playback.
+        if (study.media[currentIndex]?.type === 'video') {
+            return; 
+        }
+
         const interval = setInterval(nextSlide, 4500);
         return () => clearInterval(interval);
-    }, [isAutoPlaying, nextSlide]);
+    }, [isAutoPlaying, nextSlide, currentIndex, study.media]);
 
     return (
         <div className="relative w-full overflow-x-hidden">
@@ -258,6 +265,8 @@ export default function WorkCaseContent({
                                                 hlsUrl={study.media[currentIndex].hlsUrl}
                                                 className="w-full h-full object-cover"
                                                 controls
+                                                autoPlay
+                                                muted
                                             />
                                         )}
                                     </div>
