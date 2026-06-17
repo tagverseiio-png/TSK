@@ -88,13 +88,25 @@ router.get("/drive-stream/:id", async (req: Request, res: Response) => {
 
     https.get(finalUrl, { headers }, (proxyRes) => {
       res.status(proxyRes.statusCode || 200);
-      for (const [key, value] of Object.entries(proxyRes.headers)) {
-        const lowerKey = key.toLowerCase();
-        if (lowerKey !== "content-disposition" && lowerKey !== "set-cookie" && value) {
-          res.setHeader(key, value as string | string[]);
+
+      // Only forward headers needed for video playback (whitelist).
+      // Google sends Cross-Origin-Resource-Policy: same-site, which Chrome
+      // enforces and blocks the stream when API and frontend are different sites.
+      const safeHeaders = [
+        "content-type", "content-length", "content-range",
+        "accept-ranges", "etag", "last-modified", "cache-control",
+      ];
+      for (const h of safeHeaders) {
+        if (proxyRes.headers[h]) {
+          res.setHeader(h, proxyRes.headers[h] as string);
         }
       }
+
+      // Explicitly allow cross-origin access
       res.setHeader("content-disposition", "inline");
+      res.setHeader("cross-origin-resource-policy", "cross-origin");
+      res.setHeader("access-control-allow-origin", "*");
+
       proxyRes.pipe(res);
     }).on("error", (err) => {
       console.error("Stream pipe error:", err);
