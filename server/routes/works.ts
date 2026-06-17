@@ -42,7 +42,7 @@ import https from "https";
 // ─── GET stream Google Drive video without UI (public) ──────────────────────
 router.get("/drive-stream/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     let finalUrl = "";
     let cookieStr = "";
     const now = Date.now();
