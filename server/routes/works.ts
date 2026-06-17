@@ -31,6 +31,70 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
+// ─── GET stream Google Drive video without UI (public) ──────────────────────
+import https from "https";
+
+router.get("/drive-stream/:id", async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    let url = `https://drive.google.com/uc?export=download&id=${id}`;
+    
+    const res1 = await fetch(url, { redirect: "manual" });
+    
+    const proxyStream = (targetUrl: string, cookieStr: string = "") => {
+      const headers: Record<string, string> = {};
+      if (req.headers.range) headers.Range = req.headers.range;
+      if (cookieStr) headers.Cookie = cookieStr;
+
+      https.get(targetUrl, { headers }, (proxyRes) => {
+        res.status(proxyRes.statusCode || 200);
+        for (const [key, value] of Object.entries(proxyRes.headers)) {
+          if (key.toLowerCase() !== 'content-disposition' && value) {
+            res.setHeader(key, value as string | string[]);
+          }
+        }
+        res.setHeader('content-disposition', 'inline');
+        proxyRes.pipe(res);
+      }).on('error', (err) => {
+        console.error("Stream pipe error:", err);
+        if (!res.headersSent) res.status(500).end();
+      });
+    };
+    
+    if (res1.status === 303 || res1.status === 302) {
+      const loc = res1.headers.get("location");
+      const cookies = res1.headers.get("set-cookie") || "";
+      
+      if (loc) {
+        const res2 = await fetch(loc, { headers: { Cookie: cookies }});
+        const contentType = res2.headers.get("content-type") || "";
+        
+        if (contentType.includes("text/html")) {
+          const text = await res2.text();
+          const uuidMatch = text.match(/name="uuid" value="([^"]+)"/);
+          
+          if (uuidMatch) {
+            const finalUrl = `${loc}&confirm=t&uuid=${uuidMatch[1]}`;
+            return proxyStream(finalUrl, cookies);
+          }
+        } else {
+          // Not HTML, so loc is already the direct media stream. Cancel body and proxy.
+          if (res2.body && typeof (res2.body as any).cancel === 'function') {
+            (res2.body as any).cancel();
+          }
+          return proxyStream(loc, cookies);
+        }
+      }
+    }
+    
+    // Fallback if no redirect occurred
+    return proxyStream(url);
+  } catch (err) {
+    console.error("Drive stream proxy error:", err);
+    if (!res.headersSent) return res.status(500).json({ error: "Failed to resolve drive stream" });
+  }
+});
+
 // ─── GET single work by slug (public) ────────────────────────────────────────
 router.get("/:slug", async (req: Request, res: Response) => {
   try {

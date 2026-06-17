@@ -248,13 +248,12 @@ export default function WorkCaseContent({
                                 ) : (
                                     <div className="w-full h-full bg-black relative">
                                         {(!study.media[currentIndex].src.startsWith("http") && !study.media[currentIndex].src.startsWith("/") && !study.media[currentIndex].src.includes(".")) ? (
-                                            <iframe
-                                                src={`https://drive.google.com/file/d/${study.media[currentIndex].src}/preview`}
-                                                className="w-full h-full"
-                                                style={{ border: "none" }}
-                                                allow="autoplay; encrypted-media"
-                                                allowFullScreen
-                                                loading="lazy"
+                                            <VideoPlayer
+                                                src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/works/drive-stream/${study.media[currentIndex].src}`}
+                                                className="w-full h-full object-cover"
+                                                controls
+                                                autoPlay
+                                                muted
                                             />
                                         ) : (
                                             <VideoPlayer
@@ -275,20 +274,20 @@ export default function WorkCaseContent({
                         </AnimatePresence>
 
                         {/* Navigation Overlay */}
-                        <div className="absolute bottom-10 left-6 right-6 md:left-10 md:right-10 flex items-center justify-between z-20">
+                        <div className="absolute bottom-24 md:bottom-10 left-6 right-6 md:left-10 md:right-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-4 z-20 pointer-events-none">
                             {/* Dot Indicators */}
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2 pointer-events-auto max-w-[80%] md:max-w-none">
                                 {study.media.map((_, i) => (
                                     <button 
                                         key={i}
                                         onClick={() => setCurrentIndex(i)}
-                                        className={`h-[1px] transition-all duration-500 ${currentIndex === i ? 'w-10 bg-brand-orange' : 'w-4 bg-white/20 hover:bg-white/40'}`}
+                                        className={`h-[1.5px] transition-all duration-500 ${currentIndex === i ? 'w-8 md:w-10 bg-brand-orange' : 'w-3 md:w-4 bg-white/20 hover:bg-white/40'}`}
                                     />
                                 ))}
                             </div>
 
                             {/* Prev/Next Buttons */}
-                            <div className="flex gap-4">
+                            <div className="flex gap-4 self-end md:self-auto pointer-events-auto shrink-0">
                                 <button 
                                     onClick={prevSlide}
                                     className="w-12 h-12 flex items-center justify-center rounded-full border border-white/10 bg-black/30 backdrop-blur-md hover:bg-brand-orange hover:border-brand-orange transition-all duration-500"
