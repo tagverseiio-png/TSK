@@ -78,7 +78,7 @@ async function resolveDriveUrl(fileId: string): Promise<string> {
 router.get("/drive-stream/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const url = await resolveDriveUrl(id);
+    const url = await resolveDriveUrl(id as string);
     res.setHeader("Cache-Control", "public, max-age=1800"); // 30 min browser cache
     return res.json({ url });
   } catch (err) {
