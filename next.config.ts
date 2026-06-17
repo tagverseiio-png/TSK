@@ -16,6 +16,14 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/works/drive-stream/:id',
+        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://tskapi.t4gverse.com'}/api/works/drive-stream/:id`,
+      },
+    ]
+  },
 };
 
 export default nextConfig;

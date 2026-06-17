@@ -97,7 +97,7 @@ router.get("/drive-stream/:id", async (req: Request, res: Response) => {
       // enforces and blocks the stream when API and frontend are different sites.
       const safeHeaders = [
         "content-type", "content-length", "content-range",
-        "accept-ranges", "etag", "last-modified", "cache-control",
+        "accept-ranges", "etag", "last-modified"
       ];
       for (const h of safeHeaders) {
         if (proxyRes.headers[h]) {
@@ -105,10 +105,11 @@ router.get("/drive-stream/:id", async (req: Request, res: Response) => {
         }
       }
 
-      // Explicitly allow cross-origin access
+      // Explicitly allow cross-origin access and FORCE aggressive CDN caching
       res.setHeader("content-disposition", "inline");
       res.setHeader("cross-origin-resource-policy", "cross-origin");
       res.setHeader("access-control-allow-origin", "*");
+      res.setHeader("cache-control", "public, s-maxage=31536000, max-age=31536000, stale-while-revalidate=86400");
 
       proxyRes.pipe(res);
 
