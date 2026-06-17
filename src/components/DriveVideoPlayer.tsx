@@ -86,7 +86,6 @@ export default function DriveVideoPlayer({
       loop={loop}
       playsInline
       preload="metadata"
-      crossOrigin="anonymous"
       controlsList="nodownload"
     />
   );
