@@ -130,6 +130,7 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
     if (step === 1 && (!formData.name || !formData.phone)) return true;
     if (step === 2) {
       if (!formData.date || !formData.startTime || lockedSlots.includes(formData.startTime)) return true;
+      if (formData.date < minDate) return true;
     }
     return false;
   };
@@ -245,6 +246,11 @@ export default function BookingForm({ config }: { config: StudioConfig }) {
                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-brand-orange transition-all hover:bg-white/10"
                         style={{ colorScheme: "dark" }}
                       />
+                      {formData.date && formData.date < minDate && (
+                        <p className="text-red-400 text-[10px] uppercase font-monument tracking-widest mt-2 flex items-center gap-1">
+                          <Lock size={10} /> Date must be {minDate} or later
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-3">
