@@ -89,7 +89,8 @@ router.get("/drive-stream/:id", async (req: Request, res: Response) => {
     https.get(finalUrl, { headers }, (proxyRes) => {
       res.status(proxyRes.statusCode || 200);
       for (const [key, value] of Object.entries(proxyRes.headers)) {
-        if (key.toLowerCase() !== "content-disposition" && value) {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey !== "content-disposition" && lowerKey !== "set-cookie" && value) {
           res.setHeader(key, value as string | string[]);
         }
       }
