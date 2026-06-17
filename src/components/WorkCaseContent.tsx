@@ -225,53 +225,55 @@ export default function WorkCaseContent({
                         className="relative group w-full h-[60vh] md:h-[70vh] lg:h-[75vh] rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_120px_rgba(0,0,0,0.9)] cursor-ns-resize"
                         onWheel={handleWheel}
                     >
-                        <AnimatePresence mode="popLayout">
+                        {/* Render all media items in the DOM so they buffer in the background instantly! */}
+                        {study.media.map((item, index) => (
                             <motion.div
-                                key={currentIndex}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
+                                key={index}
+                                initial={false}
+                                animate={{ opacity: currentIndex === index ? 1 : 0 }}
                                 transition={{ duration: 0.6, ease: "easeInOut" }}
                                 className="absolute inset-0 w-full h-full"
-                                drag="x"
+                                style={{ pointerEvents: currentIndex === index ? "auto" : "none" }}
+                                drag={currentIndex === index ? "x" : false}
                                 dragConstraints={{ left: 0, right: 0 }}
                                 onDragEnd={handleDragEnd}
                             >
-                                {study.media[currentIndex].type === "image" ? (
+                                {item.type === "image" ? (
                                     <Image
-                                        src={study.media[currentIndex].src}
-                                        alt={study.media[currentIndex].caption || ''}
+                                        src={item.src}
+                                        alt={item.caption || ''}
                                         fill
                                         className="w-full h-full object-cover will-change-transform"
-                                        priority
+                                        priority={currentIndex === index}
+                                        loading={currentIndex === index ? "eager" : "lazy"}
                                     />
                                 ) : (
                                     <div className="w-full h-full bg-black relative">
-                                        {(!study.media[currentIndex].src.startsWith("http") && !study.media[currentIndex].src.startsWith("/") && !study.media[currentIndex].src.includes(".")) ? (
+                                        {(!item.src.startsWith("http") && !item.src.startsWith("/") && !item.src.includes(".")) ? (
                                             <VideoPlayer
-                                                src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/works/drive-stream/${study.media[currentIndex].src}`}
+                                                src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/works/drive-stream/${item.src}`}
                                                 className="w-full h-full object-cover"
                                                 controls
-                                                autoPlay
+                                                autoPlay={currentIndex === index}
                                                 muted
                                             />
                                         ) : (
                                             <VideoPlayer
-                                                src={study.media[currentIndex].src}
-                                                srcHigh={study.media[currentIndex].srcHigh}
-                                                srcLow={study.media[currentIndex].srcLow}
-                                                poster={study.media[currentIndex].poster}
-                                                hlsUrl={study.media[currentIndex].hlsUrl}
+                                                src={item.src}
+                                                srcHigh={item.srcHigh}
+                                                srcLow={item.srcLow}
+                                                poster={item.poster}
+                                                hlsUrl={item.hlsUrl}
                                                 className="w-full h-full object-cover"
                                                 controls
-                                                autoPlay
+                                                autoPlay={currentIndex === index}
                                                 muted
                                             />
                                         )}
                                     </div>
                                 )}
                             </motion.div>
-                        </AnimatePresence>
+                        ))}
 
                         {/* Navigation Overlay */}
                         <div className="absolute bottom-24 md:bottom-10 left-6 right-6 md:left-10 md:right-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-4 z-20 pointer-events-none">

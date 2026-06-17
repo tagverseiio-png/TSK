@@ -127,18 +127,58 @@ export default function VideoPlayer({
     return () => window.removeEventListener("resize", handleResize);
   }, [useFallback, src, srcHigh, srcLow]);
 
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (videoRef.current && videoRef.current.readyState >= 3) {
+      setIsLoading(false);
+    }
+  }, [src, hlsUrl, useFallback]);
+
+  // Sync play/pause state with autoPlay prop so we can keep hidden videos in DOM
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (autoPlay) {
+      video.play().catch(e => console.log("Play interrupted", e));
+    } else {
+      video.pause();
+      // Optionally reset to beginning when paused: video.currentTime = 0;
+    }
+  }, [autoPlay]);
+
   return (
-    <video
-      ref={videoRef}
-      className={className}
-      poster={poster}
-      controls={controls}
-      autoPlay={autoPlay}
-      muted={muted}
-      loop={loop}
-      playsInline={playsInline}
-      preload="metadata"
-      controlsList="nodownload"
-    />
+    <div className={`relative overflow-hidden bg-[#0D0D0D] ${className}`}>
+      {/* Premium Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#0D0D0D] transition-opacity duration-500">
+          <div className="w-12 h-12 md:w-16 md:h-16 relative">
+            <div className="absolute inset-0 border-[3px] border-white/5 rounded-full" />
+            <div className="absolute inset-0 border-[3px] border-brand-orange rounded-full border-t-transparent animate-spin" />
+          </div>
+          <span className="font-monument text-[8px] md:text-[10px] tracking-[4px] text-brand-orange/80 uppercase mt-6 animate-pulse">
+            Loading Media
+          </span>
+        </div>
+      )}
+
+      <video
+        ref={videoRef}
+        className={`w-full h-full object-cover transition-opacity duration-1000 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+        poster={poster}
+        controls={controls}
+        autoPlay={autoPlay}
+        muted={muted}
+        loop={loop}
+        playsInline={playsInline}
+        preload="metadata"
+        controlsList="nodownload"
+        onLoadStart={() => setIsLoading(true)}
+        onWaiting={() => setIsLoading(true)}
+        onCanPlay={() => setIsLoading(false)}
+        onPlaying={() => setIsLoading(false)}
+      />
+    </div>
   );
 }
