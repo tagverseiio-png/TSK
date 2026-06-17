@@ -6,6 +6,7 @@ import Link from "next/link";
 import { m as motion, AnimatePresence, PanInfo } from "framer-motion";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import VideoPlayer from "./VideoPlayer";
+import DriveVideoPlayer from "./DriveVideoPlayer";
 
 interface MediaItem {
     type: 'image' | 'video';
@@ -248,8 +249,8 @@ export default function WorkCaseContent({
                                 ) : (
                                     <div className="w-full h-full bg-black relative">
                                         {(!study.media[currentIndex].src.startsWith("http") && !study.media[currentIndex].src.startsWith("/") && !study.media[currentIndex].src.includes(".")) ? (
-                                            <VideoPlayer
-                                                src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/works/drive-stream/${study.media[currentIndex].src}`}
+                                            <DriveVideoPlayer
+                                                driveId={study.media[currentIndex].src}
                                                 className="w-full h-full object-cover"
                                                 controls
                                                 autoPlay

@@ -16,7 +16,7 @@ const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
 // ─── GET all works (public) ───────────────────────────────────────────────────
 router.get("/", async (_req: Request, res: Response) => {
   try {
-    const works = await getCached("works_all", 60, async () => {
+    const works = await getCached("works_all", 300, async () => {
       const { db } = await getDb();
       return db.collection("caseStudies").find({}).sort({ number: 1 }).toArray();
     });
@@ -31,67 +31,59 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
-// ─── GET stream Google Drive video without UI (public) ──────────────────────
-import https from "https";
+// ─── Drive URL cache (30 min TTL) ───────────────────────────────────────────
+const driveUrlCache = new Map<string, { url: string; expiry: number }>();
+const DRIVE_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
+async function resolveDriveUrl(fileId: string): Promise<string> {
+  const now = Date.now();
+  const cached = driveUrlCache.get(fileId);
+  if (cached && cached.expiry > now) return cached.url;
+
+  const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+  const res1 = await fetch(downloadUrl, { redirect: "manual" });
+
+  if (res1.status === 303 || res1.status === 302) {
+    const loc = res1.headers.get("location");
+    const cookies = res1.headers.get("set-cookie") || "";
+
+    if (loc) {
+      const res2 = await fetch(loc, { headers: { Cookie: cookies } });
+      const contentType = res2.headers.get("content-type") || "";
+
+      if (contentType.includes("text/html")) {
+        const text = await res2.text();
+        const uuidMatch = text.match(/name="uuid" value="([^"]+)"/);
+        if (uuidMatch) {
+          const finalUrl = `${loc}&confirm=t&uuid=${uuidMatch[1]}`;
+          driveUrlCache.set(fileId, { url: finalUrl, expiry: now + DRIVE_CACHE_TTL });
+          return finalUrl;
+        }
+      } else {
+        // Small file — loc IS the direct stream URL
+        if (res2.body && typeof (res2.body as any).cancel === "function") {
+          (res2.body as any).cancel();
+        }
+        driveUrlCache.set(fileId, { url: loc, expiry: now + DRIVE_CACHE_TTL });
+        return loc;
+      }
+    }
+  }
+
+  // Fallback: return the download URL directly
+  return downloadUrl;
+}
+
+// ─── GET resolve Google Drive URL (public, lightweight) ─────────────────────
 router.get("/drive-stream/:id", async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    let url = `https://drive.google.com/uc?export=download&id=${id}`;
-    
-    const res1 = await fetch(url, { redirect: "manual" });
-    
-    const proxyStream = (targetUrl: string, cookieStr: string = "") => {
-      const headers: Record<string, string> = {};
-      if (req.headers.range) headers.Range = req.headers.range;
-      if (cookieStr) headers.Cookie = cookieStr;
-
-      https.get(targetUrl, { headers }, (proxyRes) => {
-        res.status(proxyRes.statusCode || 200);
-        for (const [key, value] of Object.entries(proxyRes.headers)) {
-          if (key.toLowerCase() !== 'content-disposition' && value) {
-            res.setHeader(key, value as string | string[]);
-          }
-        }
-        res.setHeader('content-disposition', 'inline');
-        proxyRes.pipe(res);
-      }).on('error', (err) => {
-        console.error("Stream pipe error:", err);
-        if (!res.headersSent) res.status(500).end();
-      });
-    };
-    
-    if (res1.status === 303 || res1.status === 302) {
-      const loc = res1.headers.get("location");
-      const cookies = res1.headers.get("set-cookie") || "";
-      
-      if (loc) {
-        const res2 = await fetch(loc, { headers: { Cookie: cookies }});
-        const contentType = res2.headers.get("content-type") || "";
-        
-        if (contentType.includes("text/html")) {
-          const text = await res2.text();
-          const uuidMatch = text.match(/name="uuid" value="([^"]+)"/);
-          
-          if (uuidMatch) {
-            const finalUrl = `${loc}&confirm=t&uuid=${uuidMatch[1]}`;
-            return proxyStream(finalUrl, cookies);
-          }
-        } else {
-          // Not HTML, so loc is already the direct media stream. Cancel body and proxy.
-          if (res2.body && typeof (res2.body as any).cancel === 'function') {
-            (res2.body as any).cancel();
-          }
-          return proxyStream(loc, cookies);
-        }
-      }
-    }
-    
-    // Fallback if no redirect occurred
-    return proxyStream(url);
+    const url = await resolveDriveUrl(id);
+    res.setHeader("Cache-Control", "public, max-age=1800"); // 30 min browser cache
+    return res.json({ url });
   } catch (err) {
-    console.error("Drive stream proxy error:", err);
-    if (!res.headersSent) return res.status(500).json({ error: "Failed to resolve drive stream" });
+    console.error("Drive URL resolve error:", err);
+    return res.status(500).json({ error: "Failed to resolve drive URL" });
   }
 });
 

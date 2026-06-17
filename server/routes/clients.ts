@@ -13,7 +13,7 @@ const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
 // ─── GET all clients (public) ──────────────────────────────────────────────────
 router.get("/", async (_req: Request, res: Response) => {
   try {
-    const clients = await getCached("clients_all", 60, async () => {
+    const clients = await getCached("clients_all", 300, async () => {
       const { db } = await getDb();
       return db.collection("clients").find({}).sort({ order: 1, createdAt: -1 }).toArray();
     });

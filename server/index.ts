@@ -40,8 +40,9 @@ if (cluster.isPrimary) {
 
   // 2. Fork Web Workers
   const numCPUs = os.cpus().length;
-  // Cap at 4 web workers locally to prevent overloading the dev machine
-  const webWorkersCount = Math.min(numCPUs, process.env.NODE_ENV === "production" ? numCPUs : 4);
+  // On small droplets (1-2 vCPU), cap at 1 web worker to save RAM.
+  // Each Node.js process uses ~150MB. 1 primary + 1 video + 1 web = ~450MB.
+  const webWorkersCount = process.env.NODE_ENV === "production" ? Math.min(numCPUs, 2) : Math.min(numCPUs, 4);
   
   for (let i = 0; i < webWorkersCount; i++) {
     const webWorker = cluster.fork({ WORKER_TYPE: "web" });
@@ -118,6 +119,13 @@ if (cluster.isPrimary) {
   // ─── Static media files ───────────────────────────────────────────────────────
   // Serve uploaded images/videos at http://localhost:4000/uploads/...
   app.use("/uploads/services", express.static(path.join(__dirname, "uploads/services")));
+  app.use(
+    "/uploads/clients",
+    express.static(path.join(__dirname, "uploads/clients"), {
+      maxAge: 31536000000, // 1 year caching for client logos
+      immutable: true,
+    })
+  );
   app.use(
     "/uploads",
     express.static(path.join(__dirname, "uploads"), {

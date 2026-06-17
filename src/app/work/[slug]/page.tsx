@@ -55,8 +55,9 @@ export default async function WorkCasePage({
 
   if (allDocs.length === 0) {
     return (
-      <div className="min-h-screen bg-[#15110f] flex items-center justify-center text-white font-monument text-2xl">
-        Case study not found.
+      <div className="min-h-screen bg-[#15110f] flex flex-col items-center justify-center text-white gap-4">
+        <p className="font-monument text-xl">Loading failed</p>
+        <p className="text-white/40 text-sm">Server is busy. Please refresh the page.</p>
       </div>
     );
   }

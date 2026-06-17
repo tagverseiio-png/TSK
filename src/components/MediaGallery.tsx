@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { m as motion } from "framer-motion";
 import { Play } from "lucide-react";
 import VideoPlayer from "./VideoPlayer";
+import DriveVideoPlayer from "./DriveVideoPlayer";
 
 export interface MediaItem {
     type: "image" | "video";
@@ -96,8 +97,8 @@ export default function MediaGallery({ items, maxHeight = "85vh", autoScroll = t
                                 <div className="absolute bottom-0 right-0 w-5 h-5 border-b border-r border-brand-orange/20 z-10 pointer-events-none" />
 
                                 {(!item.src.startsWith("http") && !item.src.startsWith("/") && !item.src.includes(".")) ? (
-                                    <VideoPlayer
-                                        src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api/works/drive-stream/${item.src}`}
+                                    <DriveVideoPlayer
+                                        driveId={item.src}
                                         className="w-full h-full"
                                         controls
                                     />
