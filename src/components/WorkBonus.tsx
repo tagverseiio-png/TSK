@@ -64,7 +64,7 @@ export default function WorkBonus() {
                                 Our Clients
                             </h2>
                             <p className="text-white/40 text-[11px] md:text-[14px] tracking-wide max-w-[500px] leading-relaxed">
-                                Trusted by brands across Singapore, Malaysia & India.
+                                Trusted by brands across Singapore, Malaysia.
                             </p>
                         </div>
                     </div>
@@ -82,13 +82,13 @@ export default function WorkBonus() {
                         ) : (
                             <div className="flex w-[200%] md:w-[200%] animate-logo-scroll items-center">
                                 {marqueeItems.map((logo, idx) => (
-                                    <div 
-                                        key={idx} 
+                                    <div
+                                        key={idx}
                                         className="w-40 md:w-56 h-16 md:h-24 flex-shrink-0 flex items-center justify-center mx-4 md:mx-8 opacity-50 hover:opacity-100 transition-all duration-300"
                                     >
-                                        <img 
-                                            src={logo} 
-                                            alt={`Client Logo ${idx}`} 
+                                        <img
+                                            src={logo}
+                                            alt={`Client Logo ${idx}`}
                                             className="w-full h-full object-contain"
                                             loading="lazy"
                                             decoding="async"

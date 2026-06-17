@@ -15,7 +15,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "The Simple Krew | Premium Marketing Authority",
-  description: "We engineer growth for brands that refuse to blend in. Operating in Singapore, Malaysia, and India.",
+  description: "We engineer growth for brands that refuse to blend in. Operating in Singapore, Malaysia",
   keywords: ["Marketing Agency", "Brand Engineering", "Growth Strategy", "TSK", "The Simple Krew"],
   authors: [{ name: "The Simple Krew" }],
   openGraph: {
