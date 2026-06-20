@@ -21,7 +21,7 @@ router.get("/", requireAuth, async (req: AuthRequest, res: Response) => {
   try {
     const s3Objects = await listS3Objects("works/"); // Prefix can be adjusted if needed
     
-    const files: FileInfo[] = s3Objects.map((obj) => {
+    const files: FileInfo[] = s3Objects.map((obj: any) => {
       const folder = obj.Key?.includes("/") ? path.dirname(obj.Key) : "root";
       return {
         name: path.basename(obj.Key || ""),
