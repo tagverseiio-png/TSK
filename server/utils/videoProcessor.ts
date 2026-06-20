@@ -47,8 +47,7 @@ export function compressStandard(
       .videoFilters("scale='min(1280,iw)':-2")
       .outputOptions([
         "-c:v libx264",
-        "-preset fast",
-        "-threads 2",
+        "-preset ultrafast",
         "-crf 28",
         "-maxrate 1500k",
         "-bufsize 3000k",
@@ -138,8 +137,7 @@ export function generateVariant(
       .videoFilters(scale)
       .outputOptions([
         "-c:v libx264",
-        "-preset fast",
-        "-threads 2",
+        "-preset ultrafast",
         "-crf " + crf,
         "-maxrate " + maxrate,
         "-bufsize " + bufsize,
@@ -174,8 +172,7 @@ export function generateHLSVariant(
       .outputOptions([
         "-c:v libx264",
         "-profile:v main",
-        "-preset fast",
-        "-threads 2",
+        "-preset ultrafast",
         "-crf " + crf,
         "-maxrate " + maxrate,
         "-bufsize " + bufsize,
@@ -211,73 +208,21 @@ export function processVideoPipeline(
     const posterPath = path.join(outputDir, posterFilename);
 
     // 1. Poster Frame extraction
-    onStepProgress?.("poster", 0);
-    await generatePoster(inputPath, posterPath);
-    onStepProgress?.("poster", 100);
-
-    // 2. Compress Standard (1280p max, CRF 28)
-    onStepProgress?.("standard", 0);
-    await compressStandard(inputPath, stdPath, (pct) => onStepProgress?.("standard", pct));
-    onStepProgress?.("standard", 100);
-
-    // 3. High variant (1280p, CRF 26, 2000k)
-    onStepProgress?.("high", 0);
-    await generateVariant(
-      inputPath,
-      highPath,
-      "scale='min(1280,iw)':-2",
-      26,
-      "2000k",
-      "4000k",
-      "128k",
-      (pct) => onStepProgress?.("high", pct)
-    );
-    onStepProgress?.("high", 100);
-
-    // 4. Low variant (720p, CRF 30, 800k)
-    onStepProgress?.("low", 0);
-    await generateVariant(
-      inputPath,
-      lowPath,
-      "scale='min(720,iw)':-2",
-      30,
-      "800k",
-      "1600k",
-      "96k",
-      (pct) => onStepProgress?.("low", pct)
-    );
-    onStepProgress?.("low", 100);
-
-    // 5. HLS streaming (720p and 480p variants)
-    onStepProgress?.("hls", 0);
     if (!fs.existsSync(hlsOutputDir)) {
       fs.mkdirSync(hlsOutputDir, { recursive: true });
     }
-
     const hls720Path = path.join(hlsOutputDir, "720p.m3u8");
     const hls480Path = path.join(hlsOutputDir, "480p.m3u8");
 
-    await generateHLSVariant(
-      inputPath,
-      hls720Path,
-      "scale='min(1280,iw)':-2",
-      28,
-      "1000k",
-      "2000k",
-      path.join(hlsOutputDir, "720p_%03d.ts")
-    );
-    onStepProgress?.("hls", 50);
-
-    await generateHLSVariant(
-      inputPath,
-      hls480Path,
-      "scale='min(854,iw)':-2",
-      32,
-      "500k",
-      "1000k",
-      path.join(hlsOutputDir, "480p_%03d.ts")
-    );
-    onStepProgress?.("hls", 100);
+    // Run all computationally heavy FFmpeg processes concurrently for maximum CPU saturation
+    await Promise.all([
+      generatePoster(inputPath, posterPath),
+      compressStandard(inputPath, stdPath),
+      generateVariant(inputPath, highPath, "scale='min(1280,iw)':-2", 26, "2000k", "4000k", "128k"),
+      generateVariant(inputPath, lowPath, "scale='min(720,iw)':-2", 30, "800k", "1600k", "96k"),
+      generateHLSVariant(inputPath, hls720Path, "scale='min(1280,iw)':-2", 28, "1000k", "2000k", path.join(hlsOutputDir, "720p_%03d.ts")),
+      generateHLSVariant(inputPath, hls480Path, "scale='min(854,iw)':-2", 32, "500k", "1000k", path.join(hlsOutputDir, "480p_%03d.ts"))
+    ]);
 
     // Write master playlist
     const masterContent = `#EXTM3U

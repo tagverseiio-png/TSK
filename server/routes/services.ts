@@ -4,6 +4,7 @@ import { requireAuth, AuthRequest } from "../middleware/auth";
 import { upload } from "../middleware/upload";
 import { getDb } from "../lib/db";
 import { getCached, invalidateCache } from "../lib/cache";
+import fs from "fs";
 
 const router = Router();
 const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
@@ -53,8 +54,10 @@ router.post(
   async (req: AuthRequest, res: Response) => {
     try {
       if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-      const url = `${BASE_URL}/uploads/services/${req.file.filename}`;
-      return res.json({ url, type: req.file.mimetype.startsWith("video/") ? "video" : "image" });
+      const { uploadToS3 } = await import("../utils/s3");
+      const s3Url = await uploadToS3(req.file.path, `services/${req.file.filename}`, req.file.mimetype);
+      fs.unlinkSync(req.file.path);
+      return res.json({ url: s3Url, type: req.file.mimetype.startsWith("video/") ? "video" : "image" });
     } catch (err) {
       console.error("Upload error:", err);
       return res.status(500).json({ error: "Upload failed" });

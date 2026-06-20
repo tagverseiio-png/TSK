@@ -36,8 +36,12 @@ router.post(
         return res.status(400).json({ error: "No file uploaded" });
       }
 
+      const { uploadToS3 } = await import("../utils/s3");
+      const s3Url = await uploadToS3(req.file.path, `clients/${req.file.filename}`, req.file.mimetype);
+      fs.unlinkSync(req.file.path);
+
       return res.json({
-        url: `${BASE_URL}/uploads/clients/${req.file.filename}`,
+        url: s3Url,
         filename: req.file.filename,
       });
     } catch (err) {

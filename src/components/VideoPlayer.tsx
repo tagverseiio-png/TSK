@@ -172,6 +172,7 @@ export default function VideoPlayer({
         muted={muted}
         loop={loop}
         playsInline={playsInline}
+        crossOrigin="anonymous"
         preload="metadata"
         controlsList="nodownload"
         onLoadStart={() => setIsLoading(true)}
