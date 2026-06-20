@@ -100,7 +100,7 @@ export async function deleteDirectoryFromS3(prefix: string): Promise<void> {
       ContinuationToken: continuationToken,
     });
 
-    const { Contents, IsTruncated, NextContinuationToken } = await client.send(listCommand);
+    const { Contents, IsTruncated, NextContinuationToken } = (await client.send(listCommand)) as any;
 
     if (Contents && Contents.length > 0) {
       for (const item of Contents) {
@@ -127,6 +127,6 @@ export async function listS3Objects(prefix: string) {
     Prefix: prefix,
   });
 
-  const { Contents } = await client.send(listCommand);
+  const { Contents } = (await client.send(listCommand)) as any;
   return Contents || [];
 }
