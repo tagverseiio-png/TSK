@@ -94,7 +94,7 @@ export async function deleteDirectoryFromS3(prefix: string): Promise<void> {
   let continuationToken: string | undefined = undefined;
 
   while (isTruncated) {
-    const listCommand = new ListObjectsV2Command({
+    const listCommand: any = new ListObjectsV2Command({
       Bucket: bucketName,
       Prefix: prefix,
       ContinuationToken: continuationToken,
@@ -122,7 +122,7 @@ export async function listS3Objects(prefix: string) {
   const client = getS3Client();
   const bucketName = getBucketName();
 
-  const listCommand = new ListObjectsV2Command({
+  const listCommand: any = new ListObjectsV2Command({
     Bucket: bucketName,
     Prefix: prefix,
   });
