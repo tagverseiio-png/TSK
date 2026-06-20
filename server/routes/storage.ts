@@ -2,9 +2,9 @@ import { Router, Request, Response } from "express";
 import { requireAuth, AuthRequest } from "../middleware/auth";
 import fs from "fs";
 import path from "path";
+import { listS3Objects, deleteFromS3 } from "../utils/s3";
 
 const router = Router();
-const UPLOADS_DIR = path.join(__dirname, "../uploads");
 const BASE_URL = process.env.SERVER_URL || "http://localhost:4000";
 
 interface FileInfo {
@@ -16,42 +16,23 @@ interface FileInfo {
   createdAt: Date;
 }
 
-// Helper to recursively read directory
-function getFilesRecursive(dir: string, baseDir: string = dir): FileInfo[] {
-  let results: FileInfo[] = [];
-  if (!fs.existsSync(dir)) return results;
-  
-  const list = fs.readdirSync(dir);
-  
-  for (const file of list) {
-    const filePath = path.join(dir, file);
-    const stat = fs.statSync(filePath);
-    
-    if (stat && stat.isDirectory()) {
-      results = results.concat(getFilesRecursive(filePath, baseDir));
-    } else {
-      const relativePath = path.relative(baseDir, filePath); // e.g., 'works/image.png'
-      const folder = path.dirname(relativePath);
-      const url = `${BASE_URL}/uploads/${relativePath.replace(/\\/g, "/")}`;
-      
-      results.push({
-        name: file,
-        path: filePath,
-        url,
-        size: stat.size,
-        folder: folder === "." ? "root" : folder.replace(/\\/g, "/"),
-        createdAt: stat.birthtime,
-      });
-    }
-  }
-  return results;
-}
-
 // ─── GET list all uploaded files (admin) ──────────────────────────────────────
 router.get("/", requireAuth, async (req: AuthRequest, res: Response) => {
   try {
-    const files = getFilesRecursive(UPLOADS_DIR);
-    // Sort by created desc
+    const s3Objects = await listS3Objects("works/"); // Prefix can be adjusted if needed
+    
+    const files: FileInfo[] = s3Objects.map((obj) => {
+      const folder = obj.Key?.includes("/") ? path.dirname(obj.Key) : "root";
+      return {
+        name: path.basename(obj.Key || ""),
+        path: obj.Key || "",
+        url: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${obj.Key}`,
+        size: obj.Size || 0,
+        folder: folder.replace(/\\/g, "/"),
+        createdAt: obj.LastModified || new Date(),
+      };
+    });
+
     files.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     return res.json(files);
   } catch (err) {
@@ -66,20 +47,8 @@ router.delete("/", requireAuth, async (req: AuthRequest, res: Response) => {
     const { filePath } = req.body;
     if (!filePath) return res.status(400).json({ error: "filePath is required" });
 
-    // Security check: ensure path is inside UPLOADS_DIR
-    const resolvedPath = path.resolve(filePath);
-    if (!resolvedPath.startsWith(path.resolve(UPLOADS_DIR))) {
-      return res.status(403).json({ error: "Unauthorized file path" });
-    }
-
-    if (fs.existsSync(resolvedPath)) {
-      const stat = fs.statSync(resolvedPath);
-      if (stat.isDirectory()) {
-         fs.rmSync(resolvedPath, { recursive: true, force: true });
-      } else {
-         fs.unlinkSync(resolvedPath);
-      }
-    }
+    // Since we now use S3, filePath is the S3 Key
+    await deleteFromS3(filePath);
     
     return res.json({ success: true });
   } catch (err) {

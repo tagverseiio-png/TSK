@@ -1,8 +1,5 @@
 import { MongoClient, Db } from "mongodb";
 
-const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB || "TSK";
-
 let cachedClient: MongoClient | null = null;
 let cachedDb: Db | null = null;
 
@@ -12,6 +9,9 @@ let cachedDb: Db | null = null;
  * creating a new MongoClient per request (which leaks connections).
  */
 export async function getDb(): Promise<{ client: MongoClient; db: Db }> {
+  const uri = process.env.MONGODB_URI;
+  const dbName = process.env.MONGODB_DB || "TSK";
+
   if (!uri) {
     throw new Error("MONGODB_URI is not defined");
   }

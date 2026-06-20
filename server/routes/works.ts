@@ -7,6 +7,7 @@ import path from "path";
 import fs from "fs";
 import { v4 as uuidv4 } from "uuid";
 import { processVideoPipeline } from "../utils/videoProcessor";
+import { uploadToS3, deleteFromS3, deleteDirectoryFromS3 } from "../utils/s3";
 import { getDb } from "../lib/db";
 import { getCached, invalidateCache } from "../lib/cache";
 
@@ -193,20 +194,22 @@ router.post(
           results.push({
             type: "video",
             filename: stdFilename,
-            url: `${BASE_URL}/uploads/works/${stdFilename}`,
-            srcHigh: `${BASE_URL}/uploads/works/${highFilename}`,
-            srcLow: `${BASE_URL}/uploads/works/${lowFilename}`,
-            poster: `${BASE_URL}/uploads/works/${posterFilename}`,
-            hlsUrl: `${BASE_URL}/uploads/works/hls/${baseFilename}/${hlsMaster}`,
+            url: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/${stdFilename}`,
+            srcHigh: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/${highFilename}`,
+            srcLow: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/${lowFilename}`,
+            poster: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/${posterFilename}`,
+            hlsUrl: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/hls/${baseFilename}/${hlsMaster}`,
             originalName: f.originalname,
             size: f.size,
             compressedSize: f.size // Will be unknown until processing finishes
           });
         } else {
+          const s3Url = await uploadToS3(f.path, `works/${f.filename}`, f.mimetype);
+          fs.unlinkSync(f.path);
           results.push({
             type: "image",
             filename: f.filename,
-            url: `${BASE_URL}/uploads/works/${f.filename}`,
+            url: s3Url,
             originalName: f.originalname,
             size: f.size,
           });
@@ -335,20 +338,22 @@ router.post("/assemble-chunks", requireAuth, async (req: AuthRequest, res: Respo
       return res.json({
         type: "video",
         filename: stdFilename,
-        url: `${BASE_URL}/uploads/works/${stdFilename}`,
-        srcHigh: `${BASE_URL}/uploads/works/${highFilename}`,
-        srcLow: `${BASE_URL}/uploads/works/${lowFilename}`,
-        poster: `${BASE_URL}/uploads/works/${posterFilename}`,
-        hlsUrl: `${BASE_URL}/uploads/works/hls/${baseFilename}/${hlsMaster}`,
+        url: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/${stdFilename}`,
+        srcHigh: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/${highFilename}`,
+        srcLow: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/${lowFilename}`,
+        poster: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/${posterFilename}`,
+        hlsUrl: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/works/hls/${baseFilename}/${hlsMaster}`,
         originalName,
         size: fileStats.size,
         compressedSize: fileStats.size,
       });
     } else {
+      const s3Url = await uploadToS3(finalPath, `works/${finalFilename}`, mimeType || "application/octet-stream");
+      fs.unlinkSync(finalPath);
       return res.json({
         type: "image",
         filename: finalFilename,
-        url: `${BASE_URL}/uploads/works/${finalFilename}`,
+        url: s3Url,
         originalName,
         size: fileStats.size,
       });
@@ -365,7 +370,33 @@ router.delete("/media", requireAuth, async (req: AuthRequest, res: Response) => 
     const { url } = req.body;
     if (!url) return res.status(400).json({ error: "url is required" });
 
-    if (url.includes("/uploads/works/")) {
+    // Handle S3 URLs
+    if (url.includes(".s3.") && url.includes(".amazonaws.com/works/")) {
+      const parts = url.split(".amazonaws.com/");
+      if (parts.length > 1) {
+        const s3Key = parts[1];
+        await deleteFromS3(s3Key);
+
+        const filename = s3Key.replace("works/", "");
+        const baseFilename = filename.replace(/\.(mp4|webp)$/, "").replace(/_compressed|_high|_low|_poster/, "");
+        
+        const relatedFiles = [
+          `works/${baseFilename}_compressed.mp4`,
+          `works/${baseFilename}_high.mp4`,
+          `works/${baseFilename}_low.mp4`,
+          `works/${baseFilename}_poster.webp`,
+        ];
+
+        for (const rf of relatedFiles) {
+          try { await deleteFromS3(rf); } catch {}
+        }
+
+        const hlsPrefix = `works/hls/${baseFilename}/`;
+        try { await deleteDirectoryFromS3(hlsPrefix); } catch {}
+      }
+    } 
+    // Fallback: Handle local URLs
+    else if (url.includes("/uploads/works/")) {
       const filename = url.split("/uploads/works/")[1];
       const filePath = path.join(__dirname, "../uploads/works", filename);
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
@@ -489,34 +520,58 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
 
     if (Array.isArray(work.media)) {
       for (const item of work.media) {
-        if (item.src && item.src.includes("/uploads/works/")) {
-          const filename = item.src.split("/uploads/works/")[1];
-          const filePath = path.join(__dirname, "../uploads/works", filename);
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        }
-        if (item.srcHigh && item.srcHigh.includes("/uploads/works/")) {
-          const filename = item.srcHigh.split("/uploads/works/")[1];
-          const filePath = path.join(__dirname, "../uploads/works", filename);
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        }
-        if (item.srcLow && item.srcLow.includes("/uploads/works/")) {
-          const filename = item.srcLow.split("/uploads/works/")[1];
-          const filePath = path.join(__dirname, "../uploads/works", filename);
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        }
-        if (item.poster && item.poster.includes("/uploads/works/")) {
-          const filename = item.poster.split("/uploads/works/")[1];
-          const filePath = path.join(__dirname, "../uploads/works", filename);
-          if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-        }
-        if (item.hlsUrl && item.hlsUrl.includes("/uploads/works/hls/")) {
-          const parts = item.hlsUrl.split("/uploads/works/hls/");
+        // Handle S3 URLs
+        if (item.src && item.src.includes(".s3.") && item.src.includes(".amazonaws.com/works/")) {
+          const parts = item.src.split(".amazonaws.com/");
           if (parts[1]) {
-            const hlsFolder = parts[1].split("/")[0];
-            if (hlsFolder) {
-              const hlsFolderPath = path.join(__dirname, "../uploads/works/hls", hlsFolder);
-              if (fs.existsSync(hlsFolderPath)) {
-                fs.rmSync(hlsFolderPath, { recursive: true, force: true });
+            const s3Key = parts[1];
+            await deleteFromS3(s3Key);
+            const filename = s3Key.replace("works/", "");
+            const baseFilename = filename.replace(/\.(mp4|webp)$/, "").replace(/_compressed|_high|_low|_poster/, "");
+            
+            const relatedFiles = [
+              `works/${baseFilename}_compressed.mp4`,
+              `works/${baseFilename}_high.mp4`,
+              `works/${baseFilename}_low.mp4`,
+              `works/${baseFilename}_poster.webp`,
+            ];
+            for (const rf of relatedFiles) {
+              try { await deleteFromS3(rf); } catch {}
+            }
+            try { await deleteDirectoryFromS3(`works/hls/${baseFilename}/`); } catch {}
+          }
+        } 
+        // Fallback: Handle Local URLs
+        else {
+          if (item.src && item.src.includes("/uploads/works/")) {
+            const filename = item.src.split("/uploads/works/")[1];
+            const filePath = path.join(__dirname, "../uploads/works", filename);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          }
+          if (item.srcHigh && item.srcHigh.includes("/uploads/works/")) {
+            const filename = item.srcHigh.split("/uploads/works/")[1];
+            const filePath = path.join(__dirname, "../uploads/works", filename);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          }
+          if (item.srcLow && item.srcLow.includes("/uploads/works/")) {
+            const filename = item.srcLow.split("/uploads/works/")[1];
+            const filePath = path.join(__dirname, "../uploads/works", filename);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          }
+          if (item.poster && item.poster.includes("/uploads/works/")) {
+            const filename = item.poster.split("/uploads/works/")[1];
+            const filePath = path.join(__dirname, "../uploads/works", filename);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+          }
+          if (item.hlsUrl && item.hlsUrl.includes("/uploads/works/hls/")) {
+            const parts = item.hlsUrl.split("/uploads/works/hls/");
+            if (parts[1]) {
+              const hlsFolder = parts[1].split("/")[0];
+              if (hlsFolder) {
+                const hlsFolderPath = path.join(__dirname, "../uploads/works/hls", hlsFolder);
+                if (fs.existsSync(hlsFolderPath)) {
+                  fs.rmSync(hlsFolderPath, { recursive: true, force: true });
+                }
               }
             }
           }
