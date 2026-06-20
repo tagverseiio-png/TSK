@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { m as motion, AnimatePresence } from "framer-motion";
+import { m as motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import { useEffect, useState } from "react";
 
 export default function Navigation() {
@@ -11,6 +11,18 @@ export default function Navigation() {
     const [isLoaded, setIsLoaded] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [rotatingIndex, setRotatingIndex] = useState(0);
+    const [hidden, setHidden] = useState(false);
+    const { scrollY } = useScroll();
+
+    useMotionValueEvent(scrollY, "change", (latest) => {
+        const previous = scrollY.getPrevious() ?? 0;
+        if (latest > previous && latest > 150) {
+            setHidden(true);
+            setIsMenuOpen(false); // Close mobile menu if open when scrolling down
+        } else {
+            setHidden(false);
+        }
+    });
 
     const navLinks = [
         { name: "SERVICES", href: "/services" },
@@ -40,6 +52,12 @@ export default function Navigation() {
 
     return (
         <motion.nav
+            variants={{
+                visible: { y: 0 },
+                hidden: { y: "-100%" }
+            }}
+            animate={hidden ? "hidden" : "visible"}
+            transition={{ duration: 0.35, ease: "easeInOut" }}
             className="fixed top-0 left-0 w-full z-[100] p-6 md:p-[2.5rem] flex justify-between items-center drop-shadow-md text-white uppercase font-monument text-[13px] font-bold tracking-[0.8px] leading-[1.3]"
         >
             {/* Gradient backdrop */}
