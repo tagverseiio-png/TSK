@@ -2,27 +2,37 @@ import { S3Client, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/cl
 import { Upload } from "@aws-sdk/lib-storage";
 import fs from "fs";
 
-// Initialize S3 Client
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-  },
-});
+let s3ClientInstance: S3Client | null = null;
 
-const BUCKET_NAME = process.env.AWS_S3_BUCKET || "tsk-website";
+function getS3Client(): S3Client {
+  if (!s3ClientInstance) {
+    s3ClientInstance = new S3Client({
+      region: process.env.AWS_REGION || "us-east-1",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+      },
+    });
+  }
+  return s3ClientInstance;
+}
+
+function getBucketName(): string {
+  return process.env.AWS_S3_BUCKET || "tsk-website";
+}
 
 /**
  * Uploads a local file to S3
  */
 export async function uploadToS3(localFilePath: string, s3Key: string, mimeType: string): Promise<string> {
   const fileStream = fs.createReadStream(localFilePath);
+  const client = getS3Client();
+  const bucketName = getBucketName();
 
   const upload = new Upload({
-    client: s3Client,
+    client,
     params: {
-      Bucket: BUCKET_NAME,
+      Bucket: bucketName,
       Key: s3Key,
       Body: fileStream,
       ContentType: mimeType,
@@ -34,7 +44,7 @@ export async function uploadToS3(localFilePath: string, s3Key: string, mimeType:
   });
 
   await upload.done();
-  return `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
+  return `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${s3Key}`;
 }
 
 /**
@@ -63,28 +73,34 @@ export async function uploadDirectoryToS3(localDirPath: string, s3Prefix: string
  * Deletes an object from S3
  */
 export async function deleteFromS3(s3Key: string): Promise<void> {
+  const client = getS3Client();
+  const bucketName = getBucketName();
+
   const command = new DeleteObjectCommand({
-    Bucket: BUCKET_NAME,
+    Bucket: bucketName,
     Key: s3Key,
   });
-  await s3Client.send(command);
+  await client.send(command);
 }
 
 /**
  * Deletes a directory (all objects with a specific prefix) from S3
  */
 export async function deleteDirectoryFromS3(prefix: string): Promise<void> {
+  const client = getS3Client();
+  const bucketName = getBucketName();
+
   let isTruncated = true;
   let continuationToken: string | undefined = undefined;
 
   while (isTruncated) {
     const listCommand = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
+      Bucket: bucketName,
       Prefix: prefix,
       ContinuationToken: continuationToken,
     });
 
-    const { Contents, IsTruncated, NextContinuationToken } = await s3Client.send(listCommand);
+    const { Contents, IsTruncated, NextContinuationToken } = await client.send(listCommand);
 
     if (Contents && Contents.length > 0) {
       for (const item of Contents) {
@@ -103,11 +119,14 @@ export async function deleteDirectoryFromS3(prefix: string): Promise<void> {
  * Lists all objects with a specific prefix
  */
 export async function listS3Objects(prefix: string) {
+  const client = getS3Client();
+  const bucketName = getBucketName();
+
   const listCommand = new ListObjectsV2Command({
-    Bucket: BUCKET_NAME,
+    Bucket: bucketName,
     Prefix: prefix,
   });
 
-  const { Contents } = await s3Client.send(listCommand);
+  const { Contents } = await client.send(listCommand);
   return Contents || [];
 }
