@@ -62,11 +62,18 @@ export default function VideoPlayer({
         import("hls.js")
           .then(({ default: Hls }) => {
             if (Hls.isSupported()) {
-              hls = new Hls();
+              hls = new Hls({
+                startLevel: -1, 
+                capLevelToPlayerSize: false
+              });
               hls.loadSource(hlsUrl);
               hls.attachMedia(video);
               
-              hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                // Force highest quality level immediately
+                if (data.levels && data.levels.length > 0) {
+                  hls!.currentLevel = data.levels.length - 1;
+                }
                 if (autoPlay) {
                   video.play().catch(e => console.warn("HLS.js autoplay failed", e));
                 }

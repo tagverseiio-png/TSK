@@ -47,10 +47,10 @@ export function compressStandard(
       .videoFilters("scale='min(1280,iw)':-2")
       .outputOptions([
         "-c:v libx264",
-        "-preset ultrafast",
-        "-crf 28",
-        "-maxrate 1500k",
-        "-bufsize 3000k",
+        "-preset fast",
+        "-crf 24",
+        "-maxrate 2500k",
+        "-bufsize 5000k",
         "-c:a aac",
         "-b:a 128k",
         "-movflags +faststart"
@@ -137,7 +137,7 @@ export function generateVariant(
       .videoFilters(scale)
       .outputOptions([
         "-c:v libx264",
-        "-preset ultrafast",
+        "-preset fast",
         "-crf " + crf,
         "-maxrate " + maxrate,
         "-bufsize " + bufsize,
@@ -172,7 +172,7 @@ export function generateHLSVariant(
       .outputOptions([
         "-c:v libx264",
         "-profile:v main",
-        "-preset ultrafast",
+        "-preset fast",
         "-crf " + crf,
         "-maxrate " + maxrate,
         "-bufsize " + bufsize,
@@ -218,10 +218,10 @@ export function processVideoPipeline(
     await Promise.all([
       generatePoster(inputPath, posterPath),
       compressStandard(inputPath, stdPath),
-      generateVariant(inputPath, highPath, "scale='min(1280,iw)':-2", 26, "2000k", "4000k", "128k"),
-      generateVariant(inputPath, lowPath, "scale='min(720,iw)':-2", 30, "800k", "1600k", "96k"),
-      generateHLSVariant(inputPath, hls720Path, "scale='min(1280,iw)':-2", 28, "1000k", "2000k", path.join(hlsOutputDir, "720p_%03d.ts")),
-      generateHLSVariant(inputPath, hls480Path, "scale='min(854,iw)':-2", 32, "500k", "1000k", path.join(hlsOutputDir, "480p_%03d.ts"))
+      generateVariant(inputPath, highPath, "scale='min(1280,iw)':-2", 22, "3000k", "6000k", "128k"),
+      generateVariant(inputPath, lowPath, "scale='min(720,iw)':-2", 26, "1200k", "2400k", "96k"),
+      generateHLSVariant(inputPath, hls720Path, "scale='min(1280,iw)':-2", 24, "2500k", "5000k", path.join(hlsOutputDir, "720p_%03d.ts")),
+      generateHLSVariant(inputPath, hls480Path, "scale='min(854,iw)':-2", 28, "800k", "1600k", path.join(hlsOutputDir, "480p_%03d.ts"))
     ]);
 
     // Write master playlist
