@@ -1,7 +1,7 @@
 import RosterList from '@/components/RosterList';
 import clientPromise from '@/lib/mongodb';
 
-export const revalidate = 60; // ISR: re-fetch from DB at most every 60s
+export const revalidate = 0; // Disable caching so admin updates show instantly
 
 async function getServices() {
   try {

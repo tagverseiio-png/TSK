@@ -4,7 +4,7 @@ import BackButton from "@/components/BackButton";
 import type { MediaItem } from "@/components/MediaGallery";
 import clientPromise from "@/lib/mongodb";
 
-export const revalidate = 300; // ISR: re-fetch from DB at most every 5 min
+export const revalidate = 0; // Disable caching so admin updates show instantly
 
 interface CaseStudy {
   name: string;

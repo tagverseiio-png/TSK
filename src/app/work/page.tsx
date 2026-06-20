@@ -2,7 +2,7 @@ import RosterList from "@/components/RosterList";
 import WorkBonus from "@/components/WorkBonus";
 import clientPromise from "@/lib/mongodb";
 
-export const revalidate = 600; // ISR: re-fetch from DB at most every 10 min
+export const revalidate = 0; // Disable caching so admin updates show instantly
 async function getCaseStudies() {
   try {
     const client = await clientPromise;
