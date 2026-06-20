@@ -31,6 +31,11 @@ export default function VideoPlayer({
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [useFallback, setUseFallback] = useState(false);
+  const autoPlayRef = useRef(autoPlay);
+  
+  useEffect(() => {
+    autoPlayRef.current = autoPlay;
+  }, [autoPlay]);
 
   useEffect(() => {
     const selectMp4Fallback = () => {
@@ -55,7 +60,7 @@ export default function VideoPlayer({
       if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = hlsUrl;
         video.addEventListener('loadedmetadata', () => {
-          if (autoPlay) video.play().catch(e => console.warn("Native HLS autoplay failed", e));
+          if (autoPlayRef.current) video.play().catch(e => console.warn("Native HLS autoplay failed", e));
         });
       } else {
         // 2. Dynamic import hls.js for Chrome/Firefox/etc.
@@ -74,7 +79,7 @@ export default function VideoPlayer({
                 if (data.levels && data.levels.length > 0) {
                   hls!.currentLevel = data.levels.length - 1;
                 }
-                if (autoPlay) {
+                if (autoPlayRef.current) {
                   video.play().catch(e => console.warn("HLS.js autoplay failed", e));
                 }
               });
@@ -84,21 +89,21 @@ export default function VideoPlayer({
                   console.warn("HLS fatal error, falling back to MP4:", data);
                   setUseFallback(true);
                   video.src = selectMp4Fallback();
-                  if (autoPlay) video.play().catch(e => console.warn("Fallback autoplay failed", e));
+                  if (autoPlayRef.current) video.play().catch(e => console.warn("Fallback autoplay failed", e));
                 }
               });
             } else {
               console.warn("HLS.js not supported, falling back to MP4");
               setUseFallback(true);
               video.src = selectMp4Fallback();
-              if (autoPlay) video.play().catch(e => console.warn("Fallback autoplay failed", e));
+              if (autoPlayRef.current) video.play().catch(e => console.warn("Fallback autoplay failed", e));
             }
           })
           .catch((err) => {
             console.error("Failed to load hls.js, falling back to MP4:", err);
             setUseFallback(true);
             video.src = selectMp4Fallback();
-            if (autoPlay) video.play().catch(e => console.warn("Fallback autoplay failed", e));
+            if (autoPlayRef.current) video.play().catch(e => console.warn("Fallback autoplay failed", e));
           });
       }
 
@@ -110,9 +115,9 @@ export default function VideoPlayer({
     } else {
       setUseFallback(true);
       video.src = selectMp4Fallback();
-      if (autoPlay) video.play().catch(e => console.warn("Fallback autoplay failed", e));
+      if (autoPlayRef.current) video.play().catch(e => console.warn("Fallback autoplay failed", e));
     }
-  }, [hlsUrl, src, srcHigh, srcLow, autoPlay]);
+  }, [hlsUrl, src, srcHigh, srcLow]);
 
   // Adjust source on window resize if playing MP4 fallback
   useEffect(() => {
@@ -159,10 +164,9 @@ export default function VideoPlayer({
   // Sync play/pause state for external controls (like hovering or toggling)
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !video.src) return;
+    if (!video) return;
 
     if (autoPlay) {
-      // Only call play if it's paused to avoid AbortError on initial load
       if (video.paused && video.readyState >= 2) {
         video.play().catch(e => console.warn("Play interrupted", e));
       }
