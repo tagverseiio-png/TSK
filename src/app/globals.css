@@ -139,3 +139,26 @@ body {
 .animate-logo-scroll:hover {
   animation-play-state: paused;
 }
+
+/* Custom premium style for video controls to make the slider/bar float upper and have breathing room */
+video::-webkit-media-controls-panel {
+  position: absolute !important;
+  bottom: 20px !important; /* Move the controls panel (containing the slider) up */
+  width: calc(100% - 32px) !important;
+  left: 16px !important;
+  background-color: rgba(13, 13, 13, 0.75) !important;
+  backdrop-filter: blur(12px) !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding: 0 12px !important;
+  box-sizing: border-box !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  width: 100% !important;
+  margin-bottom: 0px !important;
+}
+
+video {
+  accent-color: #FF6B00 !important; /* ensure progress bar is brand orange */
+}

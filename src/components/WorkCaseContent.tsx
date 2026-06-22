@@ -276,7 +276,7 @@ export default function WorkCaseContent({
                         ))}
 
                         {/* Navigation Overlay */}
-                        <div className="absolute bottom-24 md:bottom-10 left-6 right-6 md:left-10 md:right-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-4 z-20 pointer-events-none">
+                        <div className="absolute bottom-32 md:bottom-24 left-6 right-6 md:left-10 md:right-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 md:gap-4 z-20 pointer-events-none">
                             {/* Dot Indicators */}
                             <div className="flex flex-wrap gap-2 pointer-events-auto max-w-[80%] md:max-w-none">
                                 {study.media.map((_, i) => (
