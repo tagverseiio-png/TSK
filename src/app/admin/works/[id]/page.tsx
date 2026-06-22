@@ -232,6 +232,7 @@ export default function EditWorkPage() {
           type, src, poster, srcHigh, srcLow, hlsUrl, caption
         })),
       });
+      router.refresh();
       router.push("/admin/works");
     } catch (err: any) { alert(err.message); }
     setSaving(false);

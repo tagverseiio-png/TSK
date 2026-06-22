@@ -273,6 +273,7 @@ export default function NewWorkPage() {
         })),
       };
       await createWork(payload);
+      router.refresh();
       router.push("/admin/works");
     } catch (err: any) {
       alert(err.message);
