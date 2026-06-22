@@ -156,7 +156,8 @@ export default function VideoPlayer({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (videoRef.current && videoRef.current.readyState >= 3) {
+    const video = videoRef.current;
+    if (video && video.readyState >= 1) {
       setIsLoading(false);
     }
   }, [src, hlsUrl, useFallback]);
@@ -203,9 +204,18 @@ export default function VideoPlayer({
         preload="metadata"
         controlsList="nodownload"
         onLoadStart={() => setIsLoading(true)}
-        onWaiting={() => setIsLoading(true)}
+        onLoadedMetadata={() => setIsLoading(false)}
+        onLoadedData={() => setIsLoading(false)}
         onCanPlay={() => setIsLoading(false)}
         onPlaying={() => setIsLoading(false)}
+        onPause={() => setIsLoading(false)}
+        onSeeked={() => setIsLoading(false)}
+        onError={() => setIsLoading(false)}
+        onWaiting={() => {
+          if (videoRef.current && !videoRef.current.paused) {
+            setIsLoading(true);
+          }
+        }}
       />
     </div>
   );
