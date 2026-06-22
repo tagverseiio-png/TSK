@@ -22,6 +22,8 @@ export const getS3Client = () => {
   return new S3Client({
     region,
     credentials: getCredentials(),
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    responseChecksumValidation: "WHEN_REQUIRED",
   });
 };
 
@@ -132,9 +134,9 @@ export async function triggerMediaConvertJob(
                   Codec: "H_264",
                   H264Settings: {
                     RateControlMode: "QVBR",
-                    MaxBitrate: 2500000,
+                    MaxBitrate: 6000000, // Increased to 6 Mbps
                     QvbrSettings: {
-                      QvbrQualityLevel: 7,
+                      QvbrQualityLevel: 8, // Increased to 8
                     },
                     SceneChangeDetect: "ENABLED",
                   },
@@ -167,9 +169,9 @@ export async function triggerMediaConvertJob(
                   Codec: "H_264",
                   H264Settings: {
                     RateControlMode: "QVBR",
-                    MaxBitrate: 4500000,
+                    MaxBitrate: 10000000, // Increased to 10 Mbps (pristine 1080p)
                     QvbrSettings: {
-                      QvbrQualityLevel: 8,
+                      QvbrQualityLevel: 9, // Increased to 9 for high-fidelity details
                     },
                     SceneChangeDetect: "ENABLED",
                   },
@@ -202,9 +204,9 @@ export async function triggerMediaConvertJob(
                   Codec: "H_264",
                   H264Settings: {
                     RateControlMode: "QVBR",
-                    MaxBitrate: 1200000,
+                    MaxBitrate: 3000000, // Increased to 3 Mbps
                     QvbrSettings: {
-                      QvbrQualityLevel: 6,
+                      QvbrQualityLevel: 7, // Increased to 7
                     },
                     SceneChangeDetect: "ENABLED",
                   },
@@ -249,9 +251,9 @@ export async function triggerMediaConvertJob(
                   Codec: "H_264",
                   H264Settings: {
                     RateControlMode: "QVBR",
-                    MaxBitrate: 2200000,
+                    MaxBitrate: 4500000, // Increased to 4.5 Mbps
                     QvbrSettings: {
-                      QvbrQualityLevel: 7,
+                      QvbrQualityLevel: 8, // Increased to 8
                     },
                     SceneChangeDetect: "ENABLED",
                   },
@@ -284,9 +286,9 @@ export async function triggerMediaConvertJob(
                   Codec: "H_264",
                   H264Settings: {
                     RateControlMode: "QVBR",
-                    MaxBitrate: 800000,
+                    MaxBitrate: 2000000, // Increased to 2 Mbps
                     QvbrSettings: {
-                      QvbrQualityLevel: 6,
+                      QvbrQualityLevel: 7, // Increased to 7
                     },
                     SceneChangeDetect: "ENABLED",
                   },
@@ -334,7 +336,7 @@ export async function triggerMediaConvertJob(
                     FramerateNumerator: 1,
                     FramerateDenominator: 2, // Capture at ~2 seconds
                     MaxCaptures: 1,
-                    Quality: 80,
+                    Quality: 85, // Increased poster quality
                   },
                 },
               },
