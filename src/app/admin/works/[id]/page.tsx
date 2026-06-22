@@ -4,7 +4,8 @@ import { useEffect, useState, useRef, DragEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { getWorks, updateWork, uploadMediaWithProgress, deleteMedia } from "@/lib/adminApi";
-import { needsChunkedUpload, uploadFileChunked, formatBytes } from "@/lib/videoCompressor";
+import { formatBytes } from "@/lib/videoCompressor";
+import { uploadFileToS3Direct, triggerMediaConvertJob } from "@/lib/clientS3";
 import Combobox from "@/components/admin/Combobox";
 import { ArrowLeft, Plus, X, Film, Image as ImageIcon, Move, Loader, CheckCircle, Upload, AlertCircle } from "lucide-react";
 
@@ -35,18 +36,21 @@ interface MediaItem {
 }
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="space-y-2"><label className="text-[10px] text-brand-orange uppercase tracking-widest">{label}</label>{children}</div>
+  <div className="space-y-2">
+    <label className="text-[10px] text-brand-orange uppercase tracking-widest">{label}</label>
+    {children}
+  </div>
 );
 
 export default function EditWorkPage() {
   const router = useRouter();
-  const params = useParams<{ id: string }>();
+  const params = useParams();
+  const workId = params.id as string;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [workId, setWorkId] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [processingFiles, setProcessingFiles] = useState(false);
   const [sizeWarning, setSizeWarning] = useState<string | null>(null);
@@ -54,20 +58,32 @@ export default function EditWorkPage() {
   const [compressionStatus, setCompressionStatus] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    name: "", firstName: "", lastName: "", slug: "", category: "",
-    year: "", count: "", tagline: "", description: "", heroTagline: "",
-    services: "", number: "", featured: false,
+    name: "",
+    firstName: "",
+    lastName: "",
+    slug: "",
+    category: "",
+    year: "",
+    count: "",
+    tagline: "",
+    description: "",
+    heroTagline: "",
+    services: "",
+    number: "",
+    featured: false,
   });
+
   const [media, setMedia] = useState<MediaItem[]>([]);
 
   useEffect(() => {
     async function load() {
       try {
         const works = await getWorks();
-        const work = works.find((w: any) => w._id === params.id);
-        if (!work) { router.push("/admin/works"); return; }
-
-        setWorkId(work._id);
+        const work = works.find((w: any) => w._id === workId);
+        if (!work) {
+          router.push("/admin/works");
+          return;
+        }
         setForm({
           name: work.name || "",
           firstName: work.firstName || "",
@@ -75,23 +91,22 @@ export default function EditWorkPage() {
           slug: work.slug || "",
           category: work.category || "",
           year: work.year || "",
-          count: work.count || "01",
+          count: work.count || "",
           tagline: work.tagline || "",
           description: work.description || "",
           heroTagline: work.heroTagline || "",
           services: Array.isArray(work.services) ? work.services.join(", ") : work.services || "",
           number: work.number || "",
-          featured: work.featured || false,
+          featured: !!work.featured,
         });
         setMedia((work.media || []).map((m: any) => ({ ...m })));
       } catch { }
       setLoading(false);
     }
     load();
-  }, [params.id, router]);
+  }, [workId, router]);
 
   const processFiles = async (files: File[]) => {
-    // Check video limit
     const newItemsCount = files.map((f) => ({
       type: f.type.startsWith("video/") ? "video" : "image"
     }));
@@ -100,23 +115,6 @@ export default function EditWorkPage() {
     if (existingVideos + newVideos > 3) {
       alert("Maximum 3 videos allowed per work.");
       return;
-    }
-
-    // Split files into regular (<90MB) and large (>90MB, needs chunked upload)
-    const regularFiles: File[] = [];
-    const largeFiles: { file: File; index: number }[] = [];
-    files.forEach((f, i) => {
-      if (needsChunkedUpload(f)) {
-        largeFiles.push({ file: f, index: i });
-      } else {
-        regularFiles.push(f);
-      }
-    });
-
-    if (largeFiles.length > 0) {
-      setSizeWarning(`${largeFiles.length} file(s) over 90MB will be uploaded in chunks. This may take a few minutes.`);
-    } else {
-      setSizeWarning(null);
     }
 
     const newItems: MediaItem[] = files.map((f) => ({
@@ -133,51 +131,68 @@ export default function EditWorkPage() {
     setUploadProgress(0);
     setProcessingFiles(false);
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("tsk_admin_token") : null;
-
     try {
-      // Upload large files via chunked upload
-      const chunkedResults: { result: any; originalIndex: number }[] = [];
-      for (const { file, index } of largeFiles) {
-        setCompressing(true);
-        setCompressionStatus(`Uploading ${file.name} (${formatBytes(file.size)}) in chunks...`);
+      const imageFiles: { file: File; index: number }[] = [];
+      const videoFiles: { file: File; index: number }[] = [];
+      files.forEach((f, i) => {
+        if (f.type.startsWith("video/")) {
+          videoFiles.push({ file: f, index: i });
+        } else {
+          imageFiles.push({ file: f, index: i });
+        }
+      });
 
-        const result = await uploadFileChunked(file, token, API_BASE, (progress) => {
-          setCompressionStatus(
-            progress.stage === "uploading"
-              ? `Uploading ${file.name}: chunk ${progress.chunkIndex}/${progress.totalChunks} (${progress.percent}%)`
-              : progress.stage === "processing"
-              ? `Server processing ${file.name}...`
-              : `Done: ${file.name}`
-          );
-        });
-        chunkedResults.push({ result, originalIndex: index });
-      }
-      setCompressing(false);
-      setTimeout(() => setCompressionStatus(null), 3000);
+      const allResults: any[] = new Array(files.length);
 
-      // Upload regular files via single request
-      let regularResults: any[] = [];
-      if (regularFiles.length > 0) {
-        regularResults = await uploadMediaWithProgress(regularFiles, (percent) => {
-          setUploadProgress(percent);
-          if (percent >= 100) {
-            setProcessingFiles(true);
+      if (imageFiles.length > 0) {
+        const rawImages = imageFiles.map(img => img.file);
+        const imageResults = await uploadMediaWithProgress(rawImages, (percent) => {
+          if (videoFiles.length === 0) {
+            setUploadProgress(percent);
           }
         });
+        imageFiles.forEach((img, i) => {
+          allResults[img.index] = imageResults[i];
+        });
       }
 
-      // Merge results in original order
-      const allResults: any[] = new Array(files.length);
-      let regularIdx = 0;
-      for (let i = 0; i < files.length; i++) {
-        const chunkedResult = chunkedResults.find((cr) => cr.originalIndex === i);
-        if (chunkedResult) {
-          allResults[i] = chunkedResult.result;
-        } else {
-          allResults[i] = regularResults[regularIdx++];
-        }
+      for (let v = 0; v < videoFiles.length; v++) {
+        const { file, index } = videoFiles[v];
+
+        const uniqueId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || ".mp4";
+        const rawS3Key = `raw-uploads/${uniqueId}${ext}`;
+        const baseFilename = uniqueId;
+
+        setCompressing(true);
+        setCompressionStatus(`[${v + 1}/${videoFiles.length}] Uploading ${file.name} directly to S3...`);
+
+        await uploadFileToS3Direct(file, rawS3Key, (percent) => {
+          setCompressionStatus(
+            `[${v + 1}/${videoFiles.length}] Uploading ${file.name} to S3: ${percent}%`
+          );
+          setUploadProgress(percent);
+        });
+
+        setCompressionStatus(`[${v + 1}/${videoFiles.length}] Triggering AWS MediaConvert for ${file.name}...`);
+        setProcessingFiles(true);
+
+        const mcResult = await triggerMediaConvertJob(rawS3Key, baseFilename);
+        allResults[index] = {
+          url: mcResult.url,
+          srcHigh: mcResult.srcHigh,
+          srcLow: mcResult.srcLow,
+          poster: mcResult.poster,
+          hlsUrl: mcResult.hlsUrl,
+          compressedSize: file.size,
+        };
+
+        setProcessingFiles(false);
       }
+
+      setCompressing(false);
+      setCompressionStatus("All uploads & processing jobs initiated!");
+      setTimeout(() => setCompressionStatus(null), 3000);
 
       setMedia((prev) =>
         prev.map((item, i) => {
@@ -197,6 +212,7 @@ export default function EditWorkPage() {
         })
       );
     } catch (err: any) {
+      console.error("Upload error:", err);
       setMedia((prev) =>
         prev.map((item, i) =>
           i >= startIdx ? { ...item, uploading: false, error: err.message || "Upload failed" } : item
@@ -205,7 +221,7 @@ export default function EditWorkPage() {
     } finally {
       setUploadProgress(null);
       setProcessingFiles(false);
-      setSizeWarning(null);
+      setCompressing(false);
     }
   };
 

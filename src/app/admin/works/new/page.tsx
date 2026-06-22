@@ -4,7 +4,8 @@ import { useState, useRef, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { uploadMediaWithProgress, createWork, deleteMedia } from "@/lib/adminApi";
-import { needsChunkedUpload, uploadFileChunked, formatBytes } from "@/lib/videoCompressor";
+import { formatBytes } from "@/lib/videoCompressor";
+import { uploadFileToS3Direct, triggerMediaConvertJob } from "@/lib/clientS3";
 import Combobox from "@/components/admin/Combobox";
 import {
   ArrowLeft, Upload, X, Film, Image as ImageIcon, Plus, Move,
@@ -102,23 +103,6 @@ export default function NewWorkPage() {
       return;
     }
 
-    // Split files into regular (<90MB) and large (>90MB, needs chunked upload)
-    const regularFiles: File[] = [];
-    const largeFiles: { file: File; index: number }[] = [];
-    files.forEach((f, i) => {
-      if (needsChunkedUpload(f)) {
-        largeFiles.push({ file: f, index: i });
-      } else {
-        regularFiles.push(f);
-      }
-    });
-
-    if (largeFiles.length > 0) {
-      setSizeWarning(`${largeFiles.length} file(s) over 90MB will be uploaded in chunks. This may take a few minutes.`);
-    } else {
-      setSizeWarning(null);
-    }
-
     const newItems: MediaItem[] = files.map((f) => ({
       type: f.type.startsWith("video/") ? "video" : "image",
       src: "",
@@ -128,58 +112,84 @@ export default function NewWorkPage() {
       originalSize: f.size,
     }));
 
-    setMedia((prev) => [...prev, ...newItems]);
     const startIdx = media.length;
+    setMedia((prev) => [...prev, ...newItems]);
 
     setUploadProgress(0);
     setProcessingFiles(false);
 
-    const token = typeof window !== "undefined" ? localStorage.getItem("tsk_admin_token") : null;
-
     try {
-      // Upload large files via chunked upload
-      const chunkedResults: { result: any; originalIndex: number }[] = [];
-      for (const { file, index } of largeFiles) {
-        setCompressing(true);
-        setCompressionStatus(`Uploading ${file.name} (${formatBytes(file.size)}) in chunks...`);
+      // Split files into images and videos
+      const imageFiles: { file: File; index: number }[] = [];
+      const videoFiles: { file: File; index: number }[] = [];
+      files.forEach((f, i) => {
+        if (f.type.startsWith("video/")) {
+          videoFiles.push({ file: f, index: i });
+        } else {
+          imageFiles.push({ file: f, index: i });
+        }
+      });
 
-        const result = await uploadFileChunked(file, token, API_BASE, (progress) => {
-          setCompressionStatus(
-            progress.stage === "uploading"
-              ? `Uploading ${file.name}: chunk ${progress.chunkIndex}/${progress.totalChunks} (${progress.percent}%)`
-              : progress.stage === "processing"
-              ? `Server processing ${file.name}...`
-              : `Done: ${file.name}`
-          );
-        });
-        chunkedResults.push({ result, originalIndex: index });
-      }
-      setCompressing(false);
-      setTimeout(() => setCompressionStatus(null), 3000);
+      // Prepare an array of results to merge back in original order
+      const allResults: any[] = new Array(files.length);
 
-      // Upload regular files via single request
-      let regularResults: any[] = [];
-      if (regularFiles.length > 0) {
-        regularResults = await uploadMediaWithProgress(regularFiles, (percent) => {
-          setUploadProgress(percent);
-          if (percent >= 100) {
-            setProcessingFiles(true);
+      // 1. Upload images in a single request (the old way)
+      if (imageFiles.length > 0) {
+        const rawImages = imageFiles.map(img => img.file);
+        const imageResults = await uploadMediaWithProgress(rawImages, (percent) => {
+          // If only images are uploading, show this progress
+          if (videoFiles.length === 0) {
+            setUploadProgress(percent);
           }
         });
+        imageFiles.forEach((img, i) => {
+          allResults[img.index] = imageResults[i];
+        });
       }
 
-      // Merge results in original order
-      const allResults: any[] = new Array(files.length);
-      let regularIdx = 0;
-      for (let i = 0; i < files.length; i++) {
-        const chunkedResult = chunkedResults.find((cr) => cr.originalIndex === i);
-        if (chunkedResult) {
-          allResults[i] = chunkedResult.result;
-        } else {
-          allResults[i] = regularResults[regularIdx++];
-        }
+      // 2. Upload videos directly to S3 and trigger MediaConvert
+      for (let v = 0; v < videoFiles.length; v++) {
+        const { file, index } = videoFiles[v];
+        
+        // Generate unique keys and filenames
+        const uniqueId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase() || ".mp4";
+        const rawS3Key = `raw-uploads/${uniqueId}${ext}`;
+        const baseFilename = uniqueId;
+
+        setCompressing(true);
+        setCompressionStatus(`[${v + 1}/${videoFiles.length}] Uploading ${file.name} directly to S3...`);
+
+        // Direct S3 Multipart Upload
+        await uploadFileToS3Direct(file, rawS3Key, (percent) => {
+          setCompressionStatus(
+            `[${v + 1}/${videoFiles.length}] Uploading ${file.name} to S3: ${percent}%`
+          );
+          setUploadProgress(percent);
+        });
+
+        // Trigger MediaConvert
+        setCompressionStatus(`[${v + 1}/${videoFiles.length}] Triggering AWS MediaConvert for ${file.name}...`);
+        setProcessingFiles(true);
+        
+        const mcResult = await triggerMediaConvertJob(rawS3Key, baseFilename);
+        allResults[index] = {
+          url: mcResult.url,
+          srcHigh: mcResult.srcHigh,
+          srcLow: mcResult.srcLow,
+          poster: mcResult.poster,
+          hlsUrl: mcResult.hlsUrl,
+          compressedSize: file.size, // Approximation or original size
+        };
+
+        setProcessingFiles(false);
       }
 
+      setCompressing(false);
+      setCompressionStatus("All uploads & processing jobs initiated!");
+      setTimeout(() => setCompressionStatus(null), 3000);
+
+      // Update media items in state
       setMedia((prev) =>
         prev.map((item, i) => {
           if (i < startIdx) return item;
@@ -197,7 +207,9 @@ export default function NewWorkPage() {
           };
         })
       );
+
     } catch (err: any) {
+      console.error("Upload error:", err);
       setMedia((prev) =>
         prev.map((item, i) =>
           i >= startIdx ? { ...item, uploading: false, error: err.message || "Upload failed" } : item
@@ -206,7 +218,7 @@ export default function NewWorkPage() {
     } finally {
       setUploadProgress(null);
       setProcessingFiles(false);
-      setSizeWarning(null);
+      setCompressing(false);
     }
   };
 
