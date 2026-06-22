@@ -45,7 +45,8 @@ if (cluster.isPrimary) {
   const numCPUs = os.cpus().length;
   // On small droplets (1-2 vCPU), cap at 1 web worker to save RAM.
   // Each Node.js process uses ~150MB. 1 primary + 1 video + 1 web = ~450MB.
-  const webWorkersCount = process.env.NODE_ENV === "production" ? Math.min(numCPUs, 2) : Math.min(numCPUs, 4);
+  // Reduce to 1 web worker to save memory on 2GB droplet, preventing OOM kills when ffmpeg runs
+  const webWorkersCount = process.env.NODE_ENV === "production" ? 1 : 1;
   
   for (let i = 0; i < webWorkersCount; i++) {
     const webWorker = cluster.fork({ WORKER_TYPE: "web" });

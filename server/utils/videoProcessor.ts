@@ -214,15 +214,13 @@ export function processVideoPipeline(
     const hls720Path = path.join(hlsOutputDir, "720p.m3u8");
     const hls480Path = path.join(hlsOutputDir, "480p.m3u8");
 
-    // Run all computationally heavy FFmpeg processes concurrently for maximum CPU saturation
-    await Promise.all([
-      generatePoster(inputPath, posterPath),
-      compressStandard(inputPath, stdPath),
-      generateVariant(inputPath, highPath, "scale='min(1280,iw)':-2", 22, "3000k", "6000k", "128k"),
-      generateVariant(inputPath, lowPath, "scale='min(720,iw)':-2", 26, "1200k", "2400k", "96k"),
-      generateHLSVariant(inputPath, hls720Path, "scale='min(1280,iw)':-2", 24, "2500k", "5000k", path.join(hlsOutputDir, "720p_%03d.ts")),
-      generateHLSVariant(inputPath, hls480Path, "scale='min(854,iw)':-2", 28, "800k", "1600k", path.join(hlsOutputDir, "480p_%03d.ts"))
-    ]);
+    // Run computationally heavy FFmpeg processes sequentially to prevent OOM kills on 2GB droplets
+    await generatePoster(inputPath, posterPath);
+    await compressStandard(inputPath, stdPath);
+    await generateVariant(inputPath, highPath, "scale='min(1280,iw)':-2", 22, "3000k", "6000k", "128k");
+    await generateVariant(inputPath, lowPath, "scale='min(720,iw)':-2", 26, "1200k", "2400k", "96k");
+    await generateHLSVariant(inputPath, hls720Path, "scale='min(1280,iw)':-2", 24, "2500k", "5000k", path.join(hlsOutputDir, "720p_%03d.ts"));
+    await generateHLSVariant(inputPath, hls480Path, "scale='min(854,iw)':-2", 28, "800k", "1600k", path.join(hlsOutputDir, "480p_%03d.ts"));
 
     // Write master playlist
     const masterContent = `#EXTM3U
