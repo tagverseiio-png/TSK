@@ -343,8 +343,8 @@ export async function triggerMediaConvertJob(
             },
           ],
           OutputGroupSettings: {
-            Type: "FRAME_CAPTURE_GROUP_SETTINGS",
-            FrameCaptureSettings: {
+            Type: "FILE_GROUP_SETTINGS",
+            FileGroupSettings: {
               Destination: `${outputDestination}${baseFilename}_poster`,
             },
           },
