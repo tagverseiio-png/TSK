@@ -92,16 +92,7 @@ export default function NewWorkPage() {
   };
 
   const processFiles = async (files: File[]) => {
-    // Check video limit
-    const newItemsCount = files.map((f) => ({
-      type: f.type.startsWith("video/") ? "video" : "image"
-    }));
-    const existingVideos = media.filter(m => m.type === "video").length;
-    const newVideos = newItemsCount.filter(i => i.type === "video").length;
-    if (existingVideos + newVideos > 3) {
-      alert("Maximum 3 videos allowed per work.");
-      return;
-    }
+
 
     const newItems: MediaItem[] = files.map((f) => ({
       type: f.type.startsWith("video/") ? "video" : "image",
