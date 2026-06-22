@@ -260,13 +260,14 @@ export default function NewWorkPage() {
 
     setSaving(true);
     try {
-      const heroImage = media.find((m) => m.type === "image" && m.src);
+      const firstMedia = media.find((m) => m.src);
+      const heroImageSrc = firstMedia?.type === "image" ? firstMedia.src : firstMedia?.poster || "";
       const payload = {
         ...form,
         firstName: form.firstName,
         lastName: form.lastName,
-        image: heroImage?.src || "",
-        bgImage: heroImage?.src || "",
+        image: heroImageSrc || "",
+        bgImage: heroImageSrc || "",
         media: media.filter((m) => m.src).map(({ type, src, poster, srcHigh, srcLow, hlsUrl, caption }) => ({
           type, src, poster, srcHigh, srcLow, hlsUrl, caption,
         })),

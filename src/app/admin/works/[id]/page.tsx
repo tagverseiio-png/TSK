@@ -220,13 +220,14 @@ export default function EditWorkPage() {
     if (media.some((m) => m.uploading)) { alert("Wait for uploads"); return; }
     setSaving(true);
     try {
-      const heroImage = media.find((m) => m.type === "image" && m.src);
+      const firstMedia = media.find((m) => m.src);
+      const heroImageSrc = firstMedia?.type === "image" ? firstMedia.src : firstMedia?.poster || "";
       await updateWork(workId, {
         ...form,
         firstName: form.firstName,
         lastName: form.lastName,
-        image: heroImage?.src || form.name,
-        bgImage: heroImage?.src || "",
+        image: heroImageSrc || "",
+        bgImage: heroImageSrc || "",
         media: media.filter((m) => m.src).map(({ type, src, poster, srcHigh, srcLow, hlsUrl, caption }) => ({
           type, src, poster, srcHigh, srcLow, hlsUrl, caption
         })),
