@@ -4,7 +4,7 @@ import BackButton from "@/components/BackButton";
 import type { MediaItem } from "@/components/MediaGallery";
 import clientPromise from "@/lib/mongodb";
 
-export const revalidate = 0; // Disable caching so admin updates show instantly
+export const revalidate = 30; // ISR: serve cached, revalidate every 30s
 
 interface CaseStudy {
   name: string;
@@ -117,7 +117,6 @@ export default async function WorkCasePage({
           {caseList.map((cs) => (
             <Link
               key={cs.slug}
-              prefetch={false}
               href={`/work/${cs.slug}`}
               className={`group flex items-center gap-3 transition-all duration-500 py-1.5`}
               title={cs.name}
@@ -135,7 +134,6 @@ export default async function WorkCasePage({
           {caseList.map((cs) => (
             <Link
               key={cs.slug}
-              prefetch={false}
               href={`/work/${cs.slug}`}
               className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${slug === cs.slug ? 'bg-brand-orange scale-125 shadow-[0_0_10px_rgba(255,107,0,0.5)]' : 'bg-white/10'}`}
             />

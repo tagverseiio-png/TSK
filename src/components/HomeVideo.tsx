@@ -143,7 +143,7 @@ export default function HomeVideo() {
                     loop={isMuted}
                     muted={isMuted}
                     playsInline
-                    preload="auto"
+                    preload="metadata"
                     onEnded={handleVideoEnd}
                     onLoadedMetadata={handleLoadedMetadata}
                     className="w-full h-full object-cover will-change-[opacity]"

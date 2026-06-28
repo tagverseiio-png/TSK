@@ -32,8 +32,7 @@ export default function Navigation() {
     ];
 
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoaded(true), 500);
-        return () => clearTimeout(timer);
+        setIsLoaded(true);
     }, []);
 
     // Rotating label for mobile
@@ -129,7 +128,7 @@ export default function Navigation() {
                 <motion.div 
                     initial={{ x: "80vw", opacity: 0 }}
                     animate={{ x: isLoaded ? 0 : "80vw", opacity: 1 }}
-                    transition={{ duration: 1.2, ease: [0.76, 0, 0.24, 1], delay: 0.2 }}
+                    transition={{ duration: 0.6, ease: [0.76, 0, 0.24, 1], delay: 0.1 }}
                     className="flex gap-8"
                 >
                     <Link href="/studio" className={`hover:opacity-100 transition-opacity ${pathname === '/studio' ? 'opacity-100' : 'opacity-50'}`}>

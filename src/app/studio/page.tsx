@@ -2,7 +2,7 @@ import BookingForm from "@/components/studio/BookingForm";
 import NoiseOverlay from "@/components/NoiseOverlay";
 import clientPromise from "@/lib/mongodb";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60; // ISR: serve cached, revalidate every 60s
 
 export const metadata = {
   title: "Studio Rental | The Simple Krew",

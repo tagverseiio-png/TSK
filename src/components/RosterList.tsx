@@ -54,7 +54,7 @@ export default function RosterList({ items, basePath, pageLabel, subline }: Rost
             <div className="w-full relative z-30 pt-[5vh] pb-[25vh]">
                 {items.map((item, idx) => (
                     <div key={item.id} className="relative w-full h-[50vh]">
-                        <Link prefetch={false} href={`/${basePath}/${item.slug}`} className="absolute inset-0 block w-full h-full">
+                        <Link href={`/${basePath}/${item.slug}`} className="absolute inset-0 block w-full h-full">
                             <ScrollBlock item={item} index={idx} />
                         </Link>
                     </div>

@@ -1,13 +1,10 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
-import { m as motion } from "framer-motion";
+import clientPromise from "@/lib/mongodb";
+
+export const revalidate = 30; // ISR: serve cached, revalidate every 30s
 
 interface ServiceData {
-    _id?: string;
     slug: string;
     title: string;
     description: string;
@@ -17,57 +14,58 @@ interface ServiceData {
     number: string;
 }
 
-export default function ServicePage() {
-    const params = useParams();
-    const slug = params.slug as string;
-    const [service, setService] = useState<ServiceData | null>(null);
-    const [loading, setLoading] = useState(true);
+async function getService(slug: string): Promise<ServiceData | null> {
+    try {
+        const client = await clientPromise;
+        const db = client.db(process.env.MONGODB_DB || "TSK");
+        const doc = await db.collection("services").findOne({ slug });
+        if (!doc) return null;
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
-    // Fix URLs stored as localhost in the DB (happens when SERVER_URL isn't set on prod)
-    const fixUrl = (url?: string) => {
-        if (!url) return '';
-        if (url.includes('localhost') || url.includes('127.0.0.1')) {
-            return url.replace(/http:\/\/(?:localhost|127\.0\.0\.1):\d+/, API_URL);
-        }
-        return url;
-    };
-
-    useEffect(() => {
-        const fetchService = async () => {
-            try {
-                const res = await fetch(`${API_URL}/api/services/${slug}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    // Fix media URL before setting state
-                    if (data.mediaUrl) {
-                        data.mediaUrl = fixUrl(data.mediaUrl);
-                    }
-                    setService(data);
-                }
-            } catch (err) {
-                console.error("Failed to fetch service:", err);
-            } finally {
-                setLoading(false);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+        const fixUrl = (url?: string) => {
+            if (!url) return '';
+            if (url.includes('localhost') || url.includes('127.0.0.1')) {
+                return url.replace(/http:\/\/(?:localhost|127\.0\.0\.1):\d+/, apiUrl);
             }
+            return url;
         };
-        fetchService();
-    }, [slug]);
 
-    if (loading) return <div className="min-h-screen bg-[#15110f] flex items-center justify-center text-white font-monument">Loading...</div>;
-    if (!service) return <div className="min-h-screen bg-[#15110f] flex items-center justify-center text-white font-monument">Service Not Found</div>;
+        return {
+            slug: doc.slug as string,
+            title: doc.title as string,
+            description: doc.description as string,
+            features: (doc.features as string[]) || [],
+            mediaUrl: fixUrl(doc.mediaUrl as string),
+            mediaType: doc.mediaType as 'image' | 'video',
+            number: doc.number as string,
+        };
+    } catch (err) {
+        console.error("[services/slug] Failed to fetch service:", err);
+        return null;
+    }
+}
+
+export default async function ServicePage({
+    params,
+}: {
+    params: Promise<{ slug: string }>;
+}) {
+    const { slug } = await params;
+    const service = await getService(slug);
+
+    if (!service) {
+        return (
+            <div className="min-h-screen bg-[#15110f] flex items-center justify-center text-white font-monument text-2xl">
+                Service Not Found
+            </div>
+        );
+    }
 
     return (
         <div className="relative min-h-screen bg-[#15110f] text-white flex flex-col overflow-x-hidden pt-32 pb-20 px-6 md:px-[5rem] lg:px-[8rem]">
             {/* Header / Hero Area */}
             <div className="max-w-6xl w-full mx-auto">
-                <motion.div 
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="mb-12 relative"
-                >
+                <div className="mb-12 relative">
                     <Link href="/services" className="inline-flex items-center gap-2 text-white/50 hover:text-brand-orange transition-colors font-monument text-[10px] tracking-widest uppercase mb-8">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                         Back to Services
@@ -79,17 +77,12 @@ export default function ServicePage() {
                     <p className="text-white/60 text-lg md:text-xl leading-relaxed max-w-3xl font-light tracking-wide">
                         {service.description}
                     </p>
-                </motion.div>
+                </div>
 
                 {/* Main Content: Features | Media */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mt-20">
                     {/* Left: Key Features */}
-                    <motion.div 
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.8, delay: 0.2 }}
-                        className="space-y-12"
-                    >
+                    <div className="space-y-12">
                         <h2 className="font-monument text-2xl uppercase tracking-tighter border-b border-white/10 pb-4 w-fit">Key Features</h2>
                         <div className="grid grid-cols-1 gap-8">
                             {service.features.map((feature, i) => (
@@ -99,15 +92,10 @@ export default function ServicePage() {
                                 </div>
                             ))}
                         </div>
-                    </motion.div>
+                    </div>
 
                     {/* Right: Media Showcase */}
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 1, delay: 0.4 }}
-                        className="relative aspect-square md:aspect-[4/5] w-full bg-white/5 rounded-[2rem] overflow-hidden group shadow-2xl backdrop-blur-sm"
-                    >
+                    <div className="relative aspect-square md:aspect-[4/5] w-full bg-white/5 rounded-[2rem] overflow-hidden group shadow-2xl backdrop-blur-sm">
                         {service.mediaUrl ? (
                             service.mediaType === 'video' ? (
                                 <video 
@@ -119,10 +107,11 @@ export default function ServicePage() {
                                     className="w-full h-full object-cover"
                                 />
                             ) : (
-                                <img 
+                                <Image 
                                     src={service.mediaUrl} 
                                     alt={service.title} 
-                                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
+                                    fill
+                                    className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
                                 />
                             )
                         ) : (
@@ -138,11 +127,11 @@ export default function ServicePage() {
                                 <div className="w-2 h-2 rounded-full bg-brand-orange" />
                              </div>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
             </div>
 
-            {/* Background Decorations - Optimized using radial-gradients to avoid heavy blur computation */}
+            {/* Background Decorations */}
             <div className="fixed top-0 right-0 w-1/2 h-full bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
             <div className="fixed bottom-0 left-0 w-1/3 h-1/2 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
         </div>
