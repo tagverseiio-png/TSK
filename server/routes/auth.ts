@@ -10,12 +10,14 @@ const router = Router();
 router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password required" });
+    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
+      return res.status(400).json({ error: "Valid email and password are required" });
     }
 
+    const cleanEmail = email.trim().toLowerCase();
+
     const { db } = await getDb();
-    const admin = await db.collection("adminUsers").findOne({ email });
+    const admin = await db.collection("adminUsers").findOne({ email: cleanEmail });
 
     if (!admin) {
       return res.status(401).json({ error: "Invalid credentials" });

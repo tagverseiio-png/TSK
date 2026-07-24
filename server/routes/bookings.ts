@@ -59,10 +59,28 @@ router.delete("/:id", requireAuth, async (req: AuthRequest, res: Response) => {
 // ─── POST create booking (public — called by BookingForm) ────────────────────
 router.post("/", async (req: Request, res: Response) => {
   try {
+    const { name, email, phone, company, service, budget, date, time, location, notes, details } = req.body || {};
+
+    if (!name || typeof name !== "string" || !email || typeof email !== "string") {
+      return res.status(400).json({ error: "Name and Email are required fields" });
+    }
+
     const { db } = await getDb();
 
+    const sanitizeStr = (val: any) => (typeof val === "string" ? val.trim().slice(0, 1000) : "");
+
     const booking = {
-      ...req.body,
+      name: sanitizeStr(name),
+      email: sanitizeStr(email).toLowerCase(),
+      phone: sanitizeStr(phone),
+      company: sanitizeStr(company),
+      service: sanitizeStr(service),
+      budget: sanitizeStr(budget),
+      date: sanitizeStr(date),
+      time: sanitizeStr(time),
+      location: sanitizeStr(location),
+      notes: sanitizeStr(notes),
+      details: typeof details === "object" && details !== null ? details : {},
       status: "pending",
       createdAt: new Date(),
       updatedAt: new Date(),

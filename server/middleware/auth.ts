@@ -1,7 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET || "tsk_super_secret_2024";
+if (!process.env.JWT_SECRET) {
+  console.warn("⚠️ SECURITY WARNING: JWT_SECRET is not set in environment variables! Using default fallback.");
+}
+const JWT_SECRET = process.env.JWT_SECRET || "tsk_super_secret_jwt_2024";
 
 export interface AuthRequest extends Request {
   adminId?: string;

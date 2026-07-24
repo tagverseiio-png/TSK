@@ -3,6 +3,8 @@ dns.setDefaultResultOrder("ipv4first");
 
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import path from "path";
 import compression from "compression";
 import dotenv from "dotenv";
@@ -74,6 +76,37 @@ if (cluster.isPrimary) {
 } else {
   // ─── WEB WORKER (EXPRESS APP) ────────────────────────────────────────────────
   const app = express();
+
+  // Trust proxy for reverse proxy setup (Nginx / Vercel / Cloudflare)
+  app.set("trust proxy", 1);
+
+  // ─── Security Headers (Helmet) ────────────────────────────────────────────────
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // Disabled to allow video/hls streaming & presigned S3 media
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+    })
+  );
+
+  // ─── Rate Limiting ────────────────────────────────────────────────────────────
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 10, // Max 10 requests per 15 minutes for auth endpoints
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many login attempts. Please try again after 15 minutes." },
+  });
+
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 300, // Max 300 requests per 15 minutes for general API
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests, please try again later." },
+  });
+
+  app.use("/api/auth/login", authLimiter);
+  app.use("/api/", apiLimiter);
 
   // ─── CORS ─────────────────────────────────────────────────────────────────────
   const allowedOrigins = [

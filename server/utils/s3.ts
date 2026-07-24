@@ -1,4 +1,6 @@
-import { S3Client, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand, ListObjectsV2Command, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { MediaConvertClient, CreateJobCommand } from "@aws-sdk/client-mediaconvert";
 import { Upload } from "@aws-sdk/lib-storage";
 import fs from "fs";
 
@@ -7,7 +9,7 @@ let s3ClientInstance: S3Client | null = null;
 function getS3Client(): S3Client {
   if (!s3ClientInstance) {
     s3ClientInstance = new S3Client({
-      region: process.env.AWS_REGION || "us-east-1",
+      region: process.env.AWS_REGION || "eu-north-1",
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
@@ -21,6 +23,184 @@ function getS3Client(): S3Client {
 
 function getBucketName(): string {
   return process.env.AWS_S3_BUCKET || "tsk-website";
+}
+
+/**
+ * Generates a presigned PUT URL for direct client S3 uploads without exposing credentials
+ */
+export async function getPresignedUploadUrl(s3Key: string, contentType: string): Promise<string> {
+  const client = getS3Client();
+  const bucketName = getBucketName();
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: s3Key,
+    ContentType: contentType,
+  });
+
+  return getSignedUrl(client, command, { expiresIn: 900 }); // 15 minutes
+}
+
+/**
+ * Dispatches an AWS MediaConvert Job safely from the server
+ */
+export async function dispatchMediaConvertJob(rawS3Key: string, baseFilename: string) {
+  const region = process.env.AWS_REGION || "eu-north-1";
+  const bucket = getBucketName();
+  const roleArn = process.env.AWS_MEDIACONVERT_ROLE || process.env.NEXT_PUBLIC_AWS_MEDIACONVERT_ROLE || "";
+  const mcEndpoint = process.env.AWS_MEDIACONVERT_ENDPOINT || process.env.NEXT_PUBLIC_AWS_MEDIACONVERT_ENDPOINT || "";
+
+  if (!mcEndpoint || !roleArn) {
+    throw new Error("AWS MediaConvert endpoint or role ARN is not configured on the server.");
+  }
+
+  const client = new MediaConvertClient({
+    region,
+    endpoint: mcEndpoint,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+    },
+  });
+
+  const inputPath = `s3://${bucket}/${rawS3Key}`;
+  const outputDestination = `s3://${bucket}/works/`;
+
+  const jobSettings = {
+    Role: roleArn,
+    Settings: {
+      Inputs: [
+        {
+          FileInput: inputPath,
+          AudioSelectors: {
+            "Audio Selector 1": { DefaultSelection: "DEFAULT" },
+          },
+          VideoSelector: {},
+          TimecodeSource: "ZEROBASED",
+        },
+      ],
+      OutputGroups: [
+        {
+          Name: "File Group",
+          Outputs: [
+            {
+              ContainerSettings: { Container: "MP4" },
+              VideoDescription: {
+                Width: 1920,
+                Height: 1080,
+                CodecSettings: {
+                  Codec: "H_264",
+                  H264Settings: { RateControlMode: "QVBR", MaxBitrate: 6000000, QvbrSettings: { QvbrQualityLevel: 8 }, SceneChangeDetect: "ENABLED" },
+                },
+              },
+              AudioDescriptions: [{ AudioSourceName: "Audio Selector 1", CodecSettings: { Codec: "AAC", AacSettings: { Bitrate: 128000, SampleRate: 48000, CodingMode: "CODING_MODE_2_0" } } }],
+              NameModifier: "_compressed",
+            },
+            {
+              ContainerSettings: { Container: "MP4" },
+              VideoDescription: {
+                Width: 1920,
+                Height: 1080,
+                CodecSettings: {
+                  Codec: "H_264",
+                  H264Settings: { RateControlMode: "QVBR", MaxBitrate: 10000000, QvbrSettings: { QvbrQualityLevel: 9 }, SceneChangeDetect: "ENABLED" },
+                },
+              },
+              AudioDescriptions: [{ AudioSourceName: "Audio Selector 1", CodecSettings: { Codec: "AAC", AacSettings: { Bitrate: 128000, SampleRate: 48000, CodingMode: "CODING_MODE_2_0" } } }],
+              NameModifier: "_high",
+            },
+            {
+              ContainerSettings: { Container: "MP4" },
+              VideoDescription: {
+                Width: 1280,
+                Height: 720,
+                CodecSettings: {
+                  Codec: "H_264",
+                  H264Settings: { RateControlMode: "QVBR", MaxBitrate: 3000000, QvbrSettings: { QvbrQualityLevel: 7 }, SceneChangeDetect: "ENABLED" },
+                },
+              },
+              AudioDescriptions: [{ AudioSourceName: "Audio Selector 1", CodecSettings: { Codec: "AAC", AacSettings: { Bitrate: 96000, SampleRate: 48000, CodingMode: "CODING_MODE_2_0" } } }],
+              NameModifier: "_low",
+            },
+          ],
+          OutputGroupSettings: {
+            Type: "FILE_GROUP_SETTINGS",
+            FileGroupSettings: { Destination: outputDestination + baseFilename },
+          },
+        },
+        {
+          Name: "Apple HLS",
+          Outputs: [
+            {
+              ContainerSettings: { Container: "M3U8" },
+              VideoDescription: {
+                Width: 1280,
+                Height: 720,
+                CodecSettings: {
+                  Codec: "H_264",
+                  H264Settings: { RateControlMode: "QVBR", MaxBitrate: 4500000, QvbrSettings: { QvbrQualityLevel: 8 }, SceneChangeDetect: "ENABLED" },
+                },
+              },
+              AudioDescriptions: [{ AudioSourceName: "Audio Selector 1", CodecSettings: { Codec: "AAC", AacSettings: { Bitrate: 96000, SampleRate: 48000, CodingMode: "CODING_MODE_2_0" } } }],
+              NameModifier: "_720p",
+            },
+            {
+              ContainerSettings: { Container: "M3U8" },
+              VideoDescription: {
+                Width: 854,
+                Height: 480,
+                CodecSettings: {
+                  Codec: "H_264",
+                  H264Settings: { RateControlMode: "QVBR", MaxBitrate: 2000000, QvbrSettings: { QvbrQualityLevel: 7 }, SceneChangeDetect: "ENABLED" },
+                },
+              },
+              AudioDescriptions: [{ AudioSourceName: "Audio Selector 1", CodecSettings: { Codec: "AAC", AacSettings: { Bitrate: 64000, SampleRate: 48000, CodingMode: "CODING_MODE_2_0" } } }],
+              NameModifier: "_480p",
+            },
+          ],
+          OutputGroupSettings: {
+            Type: "HLS_GROUP_SETTINGS",
+            HlsGroupSettings: {
+              Destination: `${outputDestination}hls/${baseFilename}/master`,
+              SegmentLength: 6,
+              MinSegmentLength: 0,
+            },
+          },
+        },
+        {
+          Name: "Poster Frame Capture",
+          Outputs: [
+            {
+              ContainerSettings: { Container: "RAW" },
+              VideoDescription: {
+                Width: 1280,
+                Height: 720,
+                CodecSettings: {
+                  Codec: "FRAME_CAPTURE",
+                  FrameCaptureSettings: { FramerateNumerator: 1, FramerateDenominator: 2, MaxCaptures: 1, Quality: 85 },
+                },
+              },
+            },
+          ],
+          OutputGroupSettings: {
+            Type: "FILE_GROUP_SETTINGS",
+            FileGroupSettings: { Destination: `${outputDestination}${baseFilename}_poster` },
+          },
+        },
+      ],
+    },
+  };
+
+  const command = new CreateJobCommand(jobSettings as any);
+  await client.send(command);
+
+  return {
+    url: `https://${bucket}.s3.${region}.amazonaws.com/works/${baseFilename}_compressed.mp4`,
+    srcHigh: `https://${bucket}.s3.${region}.amazonaws.com/works/${baseFilename}_high.mp4`,
+    srcLow: `https://${bucket}.s3.${region}.amazonaws.com/works/${baseFilename}_low.mp4`,
+    poster: `https://${bucket}.s3.${region}.amazonaws.com/works/${baseFilename}_poster.0000000.jpg`,
+    hlsUrl: `https://${bucket}.s3.${region}.amazonaws.com/works/hls/${baseFilename}/master.m3u8`,
+  };
 }
 
 /**
