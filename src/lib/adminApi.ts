@@ -19,6 +19,12 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
     headers 
   });
   if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      logout();
+      if (window.location.pathname.startsWith("/admin") && window.location.pathname !== "/admin/login") {
+        window.location.href = "/admin/login";
+      }
+    }
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || "Request failed");
   }
@@ -195,7 +201,13 @@ export async function uploadClientLogo(file: File): Promise<{ url: string; filen
     body: formData,
   });
 
-  if (!res.ok) throw new Error("Logo upload failed");
+  if (!res.ok) {
+    if (res.status === 401 && typeof window !== "undefined") {
+      logout();
+      window.location.href = "/admin/login";
+    }
+    throw new Error("Logo upload failed");
+  }
   return res.json();
 }
 

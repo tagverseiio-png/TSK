@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'tskapi.t4gverse.com', pathname: '/**' },
       { protocol: 'https', hostname: 'tsk-alpha.vercel.app', pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'tsk-website.s3.eu-north-1.amazonaws.com', pathname: '/**' },
+      { protocol: 'https', hostname: '*.s3.eu-north-1.amazonaws.com', pathname: '/**' },
+      { protocol: 'https', hostname: '*.s3.amazonaws.com', pathname: '/**' },
     ],
   },
 };
