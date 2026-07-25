@@ -1,42 +1,11 @@
 import ProjectGrid from "@/components/ProjectGrid";
-import clientPromise from "@/lib/mongodb";
 
-export const revalidate = 30;
+const brandingProjects = [
+    { id: "1", image: "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?q=80&w=1000", brand: "Ocula", director: "Brand Identity", slug: "ocula", size: "medium" as const },
+    { id: "2", image: "https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?q=80&w=1000", brand: "Verge", director: "Content Strategy", slug: "verge", size: "large" as const },
+    { id: "3", image: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?q=80&w=1000", brand: "Horizon", director: "Omnichannel", slug: "horizon", size: "small" as const },
+];
 
-async function getBrandingProjects() {
-    try {
-        const client = await clientPromise;
-        const db = client.db(process.env.MONGODB_DB || "TSK");
-        const docs = await db
-            .collection("caseStudies")
-            .find({
-                $or: [
-                    { category: { $regex: /brand/i } },
-                    { category: { $regex: /creative/i } },
-                    { category: { $exists: true } }
-                ]
-            })
-            .sort({ number: 1 })
-            .toArray();
-
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://tsk-alpha.vercel.app";
-        const fixUrl = (url?: string) => url ? url.replace(/^http:\/\/localhost:\d+/, apiUrl) : "";
-
-        return docs.map((doc) => ({
-            id: doc._id.toString(),
-            brand: (doc.name as string) || "Project",
-            director: (doc.category as string) || "Branding",
-            slug: doc.slug as string,
-            image: fixUrl((doc.image as string) || (doc.media && doc.media[0] && doc.media[0].src) || ""),
-        }));
-    } catch (err) {
-        console.error("[branding] Failed to fetch case studies:", err);
-        return [];
-    }
+export default function BrandingPage() {
+    return <ProjectGrid title="Branding" projects={brandingProjects} basePath="branding" />;
 }
-
-export default async function BrandingPage() {
-    const projects = await getBrandingProjects();
-    return <ProjectGrid title="Branding" projects={projects} basePath="branding" />;
-}
-
