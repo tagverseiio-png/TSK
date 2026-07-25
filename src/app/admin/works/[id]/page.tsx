@@ -11,14 +11,8 @@ import { ArrowLeft, Plus, X, Film, Image as ImageIcon, Move, Loader, CheckCircle
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-const CATEGORIES = [
-  "Creative Direction", "Professional Photography", "Social Media Content",
-  "High-End Commercials", "Brand Campaigns", "Account Growth",
-  "Event Coverage", "Influencer Marketing", "Podcast Services", "Concert Production"
-];
 const YEARS = ["2023", "2024", "2025", "2026"];
 const COUNT_LABELS = ["01", "02", "03", "04", "05", "10+", "20+", "50+"];
-const COMMON_SERVICES = ["Creative Direction", "Post-Production", "Cinematography", "Photography", "VFX & Animation", "Color Grading", "Sound Design", "Copywriting"];
 
 interface MediaItem {
   type: "image" | "video";
@@ -50,6 +44,8 @@ export default function EditWorkPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [commonServices, setCommonServices] = useState<string[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [processingFiles, setProcessingFiles] = useState(false);
@@ -74,6 +70,19 @@ export default function EditWorkPage() {
   });
 
   const [media, setMedia] = useState<MediaItem[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/api/services`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const titles = data.map((s: any) => s.title).filter(Boolean);
+          setCategories(titles);
+          setCommonServices(titles);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -290,7 +299,7 @@ export default function EditWorkPage() {
 
             <Field label="URL Slug *"><input required className={inputCls} value={form.slug} onChange={(e) => setForm((f) => ({ ...f, slug: e.target.value }))} /></Field>
 
-            <Field label="Category"><Combobox value={form.category} onChange={(val) => setForm((f) => ({ ...f, category: val }))} options={CATEGORIES} /></Field>
+            <Field label="Category"><Combobox value={form.category} onChange={(val) => setForm((f) => ({ ...f, category: val }))} options={categories} /></Field>
             <Field label="Year"><Combobox value={form.year} onChange={(val) => setForm((f) => ({ ...f, year: val }))} options={YEARS} /></Field>
             <Field label="Number"><input className={inputCls} value={form.number} onChange={(e) => setForm((f) => ({ ...f, number: e.target.value }))} /></Field>
             <Field label="Count Label"><Combobox value={form.count} onChange={(val) => setForm((f) => ({ ...f, count: val }))} options={COUNT_LABELS} /></Field>
@@ -298,7 +307,7 @@ export default function EditWorkPage() {
           <Field label="Tagline"><input className={inputCls} value={form.tagline} onChange={(e) => setForm((f) => ({ ...f, tagline: e.target.value }))} /></Field>
           <Field label="Description"><textarea className={`${inputCls} resize-none`} rows={3} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></Field>
           <Field label="Hero Tagline (CAPS)"><textarea className={`${inputCls} resize-none`} rows={2} value={form.heroTagline} onChange={(e) => setForm((f) => ({ ...f, heroTagline: e.target.value }))} /></Field>
-          <Field label="Services (comma separated)"><Combobox value={form.services} onChange={(val) => setForm((f) => ({ ...f, services: val }))} options={COMMON_SERVICES} /></Field>
+          <Field label="Services (comma separated)"><Combobox value={form.services} onChange={(val) => setForm((f) => ({ ...f, services: val }))} options={commonServices} /></Field>
           <label className="flex items-center gap-3 cursor-pointer">
             <div className={`w-12 h-6 rounded-full flex items-center px-1 transition-colors ${form.featured ? "bg-brand-orange" : "bg-white/10"}`} onClick={() => setForm((f) => ({ ...f, featured: !f.featured }))}>
               <div className={`w-4 h-4 rounded-full bg-white shadow-md transition-all ${form.featured ? "ml-auto" : ""}`} />

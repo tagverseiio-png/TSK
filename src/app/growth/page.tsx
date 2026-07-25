@@ -1,11 +1,42 @@
 import ProjectGrid from "@/components/ProjectGrid";
+import clientPromise from "@/lib/mongodb";
 
-const growthProjects = [
-    { id: "1", image: "https://images.unsplash.com/photo-1542204165-65bf26472b9b?q=80&w=1000", brand: "TechFest", director: "Event Scale", slug: "techfest", size: "large" as const },
-    { id: "2", image: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=1000", brand: "Acquire", director: "B2B SaaS", slug: "acquire", size: "small" as const },
-    { id: "3", image: "https://images.unsplash.com/photo-1579248512140-5e3ecbcbf3bb?q=80&w=1000", brand: "Forge", director: "Market Entry", slug: "forge", size: "medium" as const },
-];
+export const revalidate = 30;
 
-export default function GrowthPage() {
-    return <ProjectGrid title="Growth" projects={growthProjects} basePath="growth" />;
+async function getGrowthProjects() {
+    try {
+        const client = await clientPromise;
+        const db = client.db(process.env.MONGODB_DB || "TSK");
+        const docs = await db
+            .collection("caseStudies")
+            .find({
+                $or: [
+                    { category: { $regex: /growth/i } },
+                    { category: { $regex: /brand/i } },
+                    { category: { $exists: true } }
+                ]
+            })
+            .sort({ number: 1 })
+            .toArray();
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://tsk-alpha.vercel.app";
+        const fixUrl = (url?: string) => url ? url.replace(/^http:\/\/localhost:\d+/, apiUrl) : "";
+
+        return docs.map((doc) => ({
+            id: doc._id.toString(),
+            brand: (doc.name as string) || "Project",
+            director: (doc.category as string) || "Growth",
+            slug: doc.slug as string,
+            image: fixUrl((doc.image as string) || (doc.media && doc.media[0] && doc.media[0].src) || ""),
+        }));
+    } catch (err) {
+        console.error("[growth] Failed to fetch case studies:", err);
+        return [];
+    }
 }
+
+export default async function GrowthPage() {
+    const projects = await getGrowthProjects();
+    return <ProjectGrid title="Growth" projects={projects} basePath="growth" />;
+}
+

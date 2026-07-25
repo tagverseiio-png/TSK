@@ -4,7 +4,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, m as motion } from "framer-motion";
 import { Volume2, VolumeX } from "lucide-react";
 
-const projects = [
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+const DEFAULT_PROJECTS = [
     {
         id: 1,
         title: "Creative Direction & Concept Planning",
@@ -34,6 +36,7 @@ const projects = [
 const AUTO_ROTATE_TIME = 15; // 15 seconds when muted
 
 export default function HomeVideo() {
+    const [projects, setProjects] = useState<Array<{ id: string | number; title: string; description: string; video: string }>>(DEFAULT_PROJECTS);
     const [activeIndex, setActiveIndex] = useState(0);
     const [displayIndex, setDisplayIndex] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
@@ -42,9 +45,26 @@ export default function HomeVideo() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const lastLoadedSrc = useRef<string | null>(null);
 
+    useEffect(() => {
+        fetch(`${API_BASE}/api/services`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    const mapped = data.map((s: any, idx: number) => ({
+                        id: s._id || idx + 1,
+                        title: s.title || "Service",
+                        description: s.description || "",
+                        video: s.mediaUrl || (idx % 2 === 0 ? "/video2.mp4" : "/video1.mp4"),
+                    }));
+                    setProjects(mapped);
+                }
+            })
+            .catch(() => {});
+    }, []);
+
     const nextVideo = useCallback(() => {
         setActiveIndex((prev) => (prev + 1) % projects.length);
-    }, []);
+    }, [projects.length]);
 
     // Fade in on initial mount
     useEffect(() => {

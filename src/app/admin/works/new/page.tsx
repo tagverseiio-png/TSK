@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, DragEvent } from "react";
+import { useState, useRef, useEffect, DragEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { uploadMediaWithProgress, createWork, deleteMedia } from "@/lib/adminApi";
@@ -14,14 +14,8 @@ import {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-const CATEGORIES = [
-  "Creative Direction", "Professional Photography", "Social Media Content", 
-  "High-End Commercials", "Brand Campaigns", "Account Growth", 
-  "Event Coverage", "Influencer Marketing", "Podcast Services", "Concert Production"
-];
 const YEARS = ["2023", "2024", "2025", "2026"];
 const COUNT_LABELS = ["01", "02", "03", "04", "05", "10+", "20+", "50+"];
-const COMMON_SERVICES = ["Creative Direction", "Post-Production", "Cinematography", "Photography", "VFX & Animation", "Color Grading", "Sound Design", "Copywriting"];
 
 interface MediaItem {
   type: "image" | "video";
@@ -49,6 +43,22 @@ export default function NewWorkPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [saving, setSaving] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [commonServices, setCommonServices] = useState<string[]>([]);
+
+  // Fetch categories/services dynamically from DB
+  useEffect(() => {
+    fetch(`${API_BASE}/api/services`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const titles = data.map((s: any) => s.title).filter(Boolean);
+          setCategories(titles);
+          setCommonServices(titles);
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [dragOver, setDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [processingFiles, setProcessingFiles] = useState(false);
@@ -333,7 +343,7 @@ export default function NewWorkPage() {
               <Combobox
                 required placeholder="Product Photography"
                 value={form.category} onChange={(val) => setForm((f) => ({ ...f, category: val }))}
-                options={CATEGORIES}
+                options={categories}
               />
             </Field>
             <Field label="Year">
@@ -387,7 +397,7 @@ export default function NewWorkPage() {
             <Combobox
               placeholder="Product Photography, Creative Direction"
               value={form.services} onChange={(val) => setForm((f) => ({ ...f, services: val }))}
-              options={COMMON_SERVICES}
+              options={commonServices}
             />
           </Field>
 
