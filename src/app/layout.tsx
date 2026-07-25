@@ -3,9 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import NoiseOverlayWrapper from "@/components/NoiseOverlayWrapper";
 import NavigationWrapper from "@/components/NavigationWrapper";
-
 import SmoothScroll from "@/components/SmoothScroll";
 import MotionProvider from "@/components/MotionProvider";
+import LoadingScreenWrapper from "@/components/LoadingScreenWrapper";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -55,11 +55,13 @@ export default function RootLayout({
       <body className="antialiased bg-brand-black text-brand-white selection:bg-brand-orange selection:text-white overflow-x-hidden min-h-screen" suppressHydrationWarning>
         <MotionProvider>
           <SmoothScroll>
-            <NoiseOverlayWrapper />
-            <NavigationWrapper />
-            <main className="relative z-10 w-full h-full">
-              {children}
-            </main>
+            <LoadingScreenWrapper>
+              <NoiseOverlayWrapper />
+              <NavigationWrapper />
+              <main className="relative z-10 w-full h-full">
+                {children}
+              </main>
+            </LoadingScreenWrapper>
           </SmoothScroll>
         </MotionProvider>
       </body>
