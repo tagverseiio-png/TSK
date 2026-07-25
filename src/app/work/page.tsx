@@ -2,7 +2,7 @@ import RosterList from "@/components/RosterList";
 import WorkBonus from "@/components/WorkBonus";
 import clientPromise from "@/lib/mongodb";
 
-export const revalidate = 30; // ISR: serve cached, revalidate every 30s
+export const revalidate = 3600; // ISR: serve cached, rebuild at most once per hour
 async function getCaseStudies() {
   try {
     const client = await clientPromise;

@@ -4,7 +4,25 @@ import BackButton from "@/components/BackButton";
 import type { MediaItem } from "@/components/MediaGallery";
 import clientPromise from "@/lib/mongodb";
 
-export const revalidate = 30; // ISR: serve cached, revalidate every 30s
+export const revalidate = 3600; // ISR: rebuild at most once per hour
+export const dynamicParams = true; // allow slugs not in generateStaticParams
+
+// Pre-build all known work slug pages at build time — eliminates cold renders
+export async function generateStaticParams() {
+  try {
+    const client = await clientPromise;
+    const db = client.db(process.env.MONGODB_DB || "TSK");
+    const slugs = await db
+      .collection("caseStudies")
+      .find({}, { projection: { slug: 1 } })
+      .toArray();
+    return slugs
+      .filter((d) => !!d.slug)
+      .map((d) => ({ slug: d.slug as string }));
+  } catch {
+    return [];
+  }
+}
 
 interface CaseStudy {
   name: string;
@@ -26,21 +44,27 @@ interface CaseListItem {
 }
 
 /**
- * Single DB query to fetch ALL case studies (projected to only needed fields),
- * replacing the original 4 separate queries.
+ * Fetch only the fields needed — current doc + slim list for sidebar.
+ * Two targeted queries instead of one big fetch-all.
  */
-async function getAllCaseData() {
+async function getPageData(slug: string) {
   try {
     const client = await clientPromise;
     const db = client.db(process.env.MONGODB_DB || "TSK");
-    const docs = await db
+
+    // Query 1: current doc (full fields)
+    const doc = await db.collection("caseStudies").findOne({ slug });
+
+    // Query 2: sidebar list (slug + name only)
+    const allDocs = await db
       .collection("caseStudies")
-      .find({})
+      .find({}, { projection: { slug: 1, name: 1, number: 1 } })
       .sort({ number: 1 })
       .toArray();
-    return docs;
+
+    return { doc, allDocs };
   } catch {
-    return [];
+    return { doc: null, allDocs: [] };
   }
 }
 
@@ -51,28 +75,18 @@ export default async function WorkCasePage({
 }) {
   const { slug } = await params;
 
-  const allDocs = await getAllCaseData();
+  const { doc, allDocs } = await getPageData(slug);
 
-  if (allDocs.length === 0) {
+  if (!doc) {
     return (
       <div className="min-h-screen bg-[#15110f] flex flex-col items-center justify-center text-white gap-4">
-        <p className="font-monument text-xl">Loading failed</p>
-        <p className="text-white/40 text-sm">Server is busy. Please refresh the page.</p>
+        <p className="font-monument text-xl">Case study not found</p>
+        <p className="text-white/40 text-sm">It may have been removed or the URL is incorrect.</p>
       </div>
     );
   }
 
   const fixUrl = (url?: string) => url ? url.replace(/^http:\/\/localhost:\d+/, process.env.NEXT_PUBLIC_API_URL || "https://tsk-alpha.vercel.app") : "";
-
-  // Find current study
-  const doc = allDocs.find(d => d.slug === slug);
-  if (!doc) {
-    return (
-      <div className="min-h-screen bg-[#15110f] flex items-center justify-center text-white font-monument text-2xl">
-        Case study not found.
-      </div>
-    );
-  }
 
   const study: CaseStudy = {
     name: doc.name as string,
@@ -95,13 +109,13 @@ export default async function WorkCasePage({
     bgImage: fixUrl(doc.bgImage as string | undefined),
   };
 
-  // Build sidebar list from the same query
+  // Build sidebar list
   const caseList: CaseListItem[] = allDocs.map((d) => ({
     slug: d.slug as string,
     name: (d.name as string).toUpperCase(),
   }));
 
-  // Get next project in chain
+  // Next project in chain
   const allSlugs = allDocs.map(d => d.slug as string);
   const currentIndex = allSlugs.indexOf(slug);
   const nextSlug = allSlugs[(currentIndex + 1) % allSlugs.length];
