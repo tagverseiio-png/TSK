@@ -62,78 +62,79 @@ export default async function ServicePage({
     }
 
     return (
-        <div className="relative min-h-screen bg-[#15110f] text-white flex flex-col overflow-x-hidden pt-32 pb-20 px-6 md:px-[5rem] lg:px-[8rem]">
-            {/* Header / Hero Area */}
-            <div className="max-w-6xl w-full mx-auto">
-                <div className="mb-12 relative">
-                    <Link href="/services" className="inline-flex items-center gap-2 text-white/50 hover:text-brand-orange transition-colors font-monument text-[10px] tracking-widest uppercase mb-8">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                        Back to Services
-                    </Link>
-                    <span className="font-monument text-brand-orange text-[12px] tracking-[4px] uppercase mb-4 block">Service {service.number}</span>
-                    <h1 className="font-monument text-2xl sm:text-4xl md:text-7xl lg:text-[7vw] leading-[1.2] uppercase mb-8 break-words overflow-hidden">
-                        {service.title}
-                    </h1>
-                    <p className="text-white/60 text-lg md:text-xl leading-relaxed max-w-3xl font-light tracking-wide">
-                        {service.description}
-                    </p>
-                </div>
+        <div className="relative min-h-screen bg-[#15110f] text-white flex flex-col overflow-x-hidden pb-32">
+            <div className="w-full px-6 md:px-[64px] lg:px-[80px] pt-[140px] md:pt-[180px]">
+                {/* Breadcrumb */}
+                <Link href="/services" className="inline-flex items-center gap-2 text-white/50 hover:text-brand-orange transition-colors font-monument text-[10px] tracking-widest uppercase mb-12 md:mb-16">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                    Back to Services
+                </Link>
 
-                {/* Main Content: Features | Media */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start mt-20">
-                    {/* Left: Key Features */}
-                    <div className="space-y-12">
-                        <h2 className="font-monument text-2xl uppercase tracking-tighter border-b border-white/10 pb-4 w-fit">Key Features</h2>
-                        <div className="grid grid-cols-1 gap-8">
-                            {service.features.map((feature, i) => (
-                                <div key={i} className="group border-b border-white/5 pb-6">
-                                    <span className="text-brand-orange font-monument text-[10px] mb-2 block opacity-50 group-hover:opacity-100 transition-opacity">{(i + 1).toString().padStart(2, '0')}</span>
-                                    <h3 className="font-monument text-sm md:text-lg uppercase group-hover:translate-x-2 transition-transform duration-300">{feature}</h3>
-                                </div>
-                            ))}
-                        </div>
+                <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-12 lg:gap-24 mb-16 md:mb-24">
+                    {/* Left Column (60%) */}
+                    <div className="w-full lg:w-[60%]">
+                        <span className="font-monument text-brand-orange text-[10px] md:text-[12px] tracking-[4px] uppercase mb-4 md:mb-6 block">
+                            Service {service.number}
+                        </span>
+                        <h1 className="font-space font-bold text-6xl md:text-8xl lg:text-[150px] leading-[0.9] lg:tracking-[-4px] uppercase text-white break-words">
+                            {service.title}
+                        </h1>
                     </div>
 
-                    {/* Right: Media Showcase */}
-                    <div className="relative aspect-square md:aspect-[4/5] w-full bg-white/5 rounded-[2rem] overflow-hidden group shadow-2xl backdrop-blur-sm">
-                        {service.mediaUrl ? (
-                            service.mediaType === 'video' ? (
-                                <video 
-                                    src={service.mediaUrl} 
-                                    autoPlay 
-                                    muted 
-                                    loop 
-                                    playsInline 
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <Image 
-                                    src={service.mediaUrl} 
-                                    alt={service.title} 
-                                    fill
-                                    className="object-cover group-hover:scale-105 transition-transform duration-1000 ease-out"
-                                />
-                            )
+                    {/* Right Column (40%) */}
+                    <div className="w-full lg:w-[40%] lg:pt-8 xl:pt-16 flex flex-col items-start lg:max-w-[500px]">
+                        <p className="text-white/80 text-lg md:text-xl leading-relaxed tracking-wide mb-8 md:mb-10">
+                            {service.description}
+                        </p>
+                        <a href="#explore" className="inline-flex items-center gap-2 font-space font-bold text-base md:text-lg text-[#15110f] bg-white px-6 md:px-8 py-3 md:py-4 hover:bg-brand-orange hover:text-white transition-colors duration-300">
+                            ↓ Explore Service
+                        </a>
+                    </div>
+                </div>
+
+                <div className="w-full h-[1px] bg-white/10 mb-16 md:mb-24" />
+
+                {/* Media Showcase */}
+                <div id="explore" className="w-full aspect-video lg:aspect-[21/9] bg-white/5 relative overflow-hidden mb-24 md:mb-32">
+                    {service.mediaUrl ? (
+                        service.mediaType === 'video' ? (
+                            <video 
+                                src={service.mediaUrl} 
+                                autoPlay 
+                                muted 
+                                loop 
+                                playsInline 
+                                className="w-full h-full object-cover"
+                            />
                         ) : (
-                            <div className="w-full h-full flex items-center justify-center border-2 border-dashed border-white/10">
-                                <span className="font-monument text-[10px] text-white/20 uppercase">Media Showcase</span>
-                            </div>
-                        )}
-                        
-                        {/* Abstract Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-brand-black/40 via-transparent to-transparent pointer-events-none" />
-                        <div className="absolute bottom-10 left-10 z-20">
-                             <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center animate-pulse">
-                                <div className="w-2 h-2 rounded-full bg-brand-orange" />
-                             </div>
+                            <Image 
+                                src={service.mediaUrl} 
+                                alt={service.title} 
+                                fill
+                                className="object-cover"
+                            />
+                        )
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center border border-white/10">
+                            <span className="font-monument text-[10px] text-white/20 uppercase">Media Showcase</span>
                         </div>
+                    )}
+                </div>
+
+                {/* Key Features */}
+                <div className="mb-24 md:mb-32">
+                    <h2 className="font-space font-bold text-3xl md:text-5xl mb-12 md:mb-16 tracking-tight">Key Features</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12 lg:gap-16">
+                        {service.features.map((feature, i) => (
+                            <div key={i} className="flex flex-col border-t border-white/10 pt-6 md:pt-8 group">
+                                <span className="font-monument text-brand-orange text-[10px] mb-4 opacity-50 group-hover:opacity-100 transition-opacity">{(i + 1).toString().padStart(2, '0')}</span>
+                                <h3 className="font-space font-bold text-xl md:text-2xl tracking-tight text-white/90 group-hover:text-white transition-colors">{feature}</h3>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            </div>
 
-            {/* Background Decorations */}
-            <div className="fixed top-0 right-0 w-1/2 h-full bg-[radial-gradient(circle_at_center,rgba(255,107,0,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
-            <div className="fixed bottom-0 left-0 w-1/3 h-1/2 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.05)_0%,transparent_70%)] pointer-events-none z-0" />
+            </div>
         </div>
     );
 }

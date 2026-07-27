@@ -23,97 +23,127 @@ interface RosterListProps {
 }
 
 export default function RosterList({ items, basePath, pageLabel, subline }: RosterListProps) {
+    const isWork = basePath === 'work';
+
     return (
         <div className="bg-[#15110f] min-h-screen text-white flex flex-col">
-
-            {/* Page Hero Header */}
+            {/* Header Section */}
             {pageLabel && (
                 <motion.div
                     initial={{ opacity: 0, y: 40 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.3 }}
-                    className="pt-[22vh] md:pt-[28vh] pb-16 md:pb-24 px-6 md:px-[5rem] relative z-30"
+                    transition={{ duration: 0.8, delay: 0.1 }}
+                    className="px-6 md:px-[64px] lg:px-[80px] pt-[140px] md:pt-[180px] pb-12 relative z-30"
                 >
-                    <div className="flex items-end gap-4 md:gap-6 mb-6">
-                        <h1 className="font-monument font-bold text-[10vw] md:text-[6vw] uppercase leading-[0.9] tracking-tight text-white will-change-[transform,opacity]">
+                    <div className="flex flex-col gap-6 max-w-4xl">
+                        <span className="font-monument text-brand-orange text-[10px] md:text-[12px] tracking-[4px]">01</span>
+                        <h1 className="font-space font-bold text-5xl md:text-6xl lg:text-[80px] uppercase leading-[0.9] tracking-tighter text-white max-w-[800px]">
                             {pageLabel}
                         </h1>
-                        <div className="hidden md:block w-[8rem] h-[1px] bg-brand-orange mb-[1.2vw]" />
+                        {subline && (
+                            <p className="text-white/70 text-base md:text-lg tracking-wide max-w-xl leading-relaxed">
+                                {subline}
+                            </p>
+                        )}
+                        {/* Shorter intentional accent */}
+                        <div className="w-16 h-[2px] bg-brand-orange mt-4" />
                     </div>
-                    {subline && (
-                        <p className="text-white/40 text-[13px] md:text-[15px] tracking-wide max-w-[600px] leading-relaxed">
-                            {subline}
-                        </p>
-                    )}
-                    <div className="mt-8 w-full h-[1px] bg-white/10" />
+                    
+                    {/* Divider below intro */}
+                    <div className="mt-16 w-full h-[1px] bg-white/10" />
                 </motion.div>
             )}
 
-
-            {/* Static Sub-container */}
-            <div className="w-full relative z-30 pt-[5vh] pb-[25vh]">
-                {items.map((item, idx) => (
-                    <div key={item.id} className="relative w-full h-[50vh]">
-                        <Link href={`/${basePath}/${item.slug}`} className="absolute inset-0 block w-full h-full">
-                            <ScrollBlock item={item} index={idx} />
-                        </Link>
+            {/* List Section */}
+            <div className="w-full relative z-30 px-6 md:px-[64px] lg:px-[80px] pb-[15vh]">
+                {isWork ? (
+                    // WORK / PORTFOLIO STYLE
+                    <div className="flex flex-col gap-24 md:gap-32 mt-12">
+                        {items.map((item, idx) => (
+                            <motion.div 
+                                key={item.id}
+                                initial={{ opacity: 0, y: 50 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-10%" }}
+                                transition={{ duration: 0.8 }}
+                            >
+                                <Link href={`/${basePath}/${item.slug}`} className="group block w-full relative">
+                                    <div className="relative w-full aspect-[4/3] md:aspect-[16/9] overflow-hidden bg-white/5 mb-6">
+                                        {item.image && (
+                                            <Image 
+                                                src={item.image}
+                                                alt={`${item.firstName} ${item.lastName}`}
+                                                fill
+                                                className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                                            />
+                                        )}
+                                        {/* Hover Overlay */}
+                                        <div className="absolute inset-0 bg-brand-orange/0 group-hover:bg-brand-orange/20 transition-colors duration-500 flex items-center justify-center">
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-500 font-monument text-white text-sm tracking-widest uppercase border border-white px-6 py-3 rounded-full backdrop-blur-sm">
+                                                View Project
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div>
+                                            <h2 className="font-space font-bold text-3xl md:text-4xl text-white group-hover:text-brand-orange transition-colors duration-300">
+                                                {item.firstName} {item.lastName}
+                                            </h2>
+                                            {item.category && (
+                                                <p className="font-monument text-white/50 text-[10px] uppercase tracking-widest mt-2">
+                                                    {item.category}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <div className="font-monument text-white/30 text-sm">
+                                            {String(idx + 1).padStart(2, "0")}
+                                        </div>
+                                    </div>
+                                </Link>
+                            </motion.div>
+                        ))}
                     </div>
-                ))}
+                ) : (
+                    // SERVICES STYLE
+                    <div className="flex flex-col mt-4">
+                        {items.map((item, idx) => (
+                            <motion.div
+                                key={item.id}
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true, margin: "-5%" }}
+                                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                            >
+                                <Link href={`/${basePath}/${item.slug}`} className="group flex flex-col md:flex-row items-start md:items-center justify-between py-10 border-b border-white/5 hover:border-brand-orange/50 transition-colors duration-500">
+                                    <div className="flex items-center gap-8 md:gap-16">
+                                        <span className="font-monument text-white/20 text-sm md:text-lg group-hover:text-brand-orange transition-colors duration-500">
+                                            {String(idx + 1).padStart(2, "0")}
+                                        </span>
+                                        <h2 className="font-space font-bold text-4xl md:text-6xl text-zinc-300 group-hover:text-white transition-colors duration-300 tracking-tight">
+                                            {item.firstName} {item.lastName}
+                                        </h2>
+                                    </div>
+                                    <div className="mt-6 md:mt-0 flex items-center gap-6">
+                                        <div className="hidden lg:block w-0 group-hover:w-[200px] h-[100px] opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out overflow-hidden bg-white/5 relative">
+                                             {item.image && (
+                                                <Image 
+                                                    src={item.image}
+                                                    alt="Service Preview"
+                                                    fill
+                                                    className="object-cover"
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center group-hover:bg-brand-orange group-hover:border-brand-orange group-hover:text-[#15110f] transition-all duration-300 transform group-hover:rotate-45">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                        </div>
+                                    </div>
+                                </Link>
+                            </motion.div>
+                        ))}
+                    </div>
+                )}
             </div>
-        </div>
-    );
-}
-
-function ScrollBlock({ item, index }: { item: RosterItem; index: number }) {
-    return (
-        <div className="group relative flex items-center justify-center h-full w-full hover:bg-white/[0.02] transition-colors duration-500 overflow-hidden">
-            {/* Featured badge */}
-            {item.featured && (
-                <div className="absolute top-6 left-6 md:left-[5rem] flex items-center gap-2 z-30">
-                    <span className="text-brand-orange text-[10px] md:text-[11px] font-monument font-bold tracking-[2px] uppercase">
-                        ★ Featured
-                    </span>
-                </div>
-            )}
-
-            {/* Index number on the left (Desktop Only) */}
-            <div className="hidden md:block absolute left-[5rem] top-1/2 -translate-y-1/2 font-monument text-white/10 text-[5vw] font-bold z-10 pointer-events-none transition-colors duration-500 will-change-transform">
-                {String(index + 1).padStart(2, "0")}
-            </div>
-
-            {/* Category tag */}
-            {item.category && (
-                <div className="absolute left-6 md:left-[5rem] bottom-6 font-monument text-white/30 text-[9px] md:text-[10px] tracking-[2px] uppercase z-20 group-hover:text-brand-orange/60 transition-colors duration-500">
-                    {item.category}
-                </div>
-            )}
-
-            <div className="flex flex-col items-center justify-center text-center font-monument font-bold tracking-[0.5px] uppercase leading-[1.1] md:leading-[1] text-[6vw] sm:text-[4.5vw] md:text-[3.5vw] lg:text-[3vw] text-zinc-300 group-hover:text-white transition-colors duration-300 relative z-20 w-full px-6 md:px-[15vw]">
-                <div>{item.firstName}</div>
-                {item.lastName && <div className="mt-1 md:mt-2">{item.lastName}</div>}
-            </div>
-
-            {/* Right side / Bottom Camera and count */}
-            <div className="absolute right-6 bottom-6 md:right-[5vw] md:bottom-auto md:top-1/2 md:-translate-y-1/2 flex items-center gap-3 font-monument text-white/40 text-[10px] md:text-[1.8vw] group-hover:text-white/80 transition-colors duration-300 z-20 pointer-events-none">
-                {/* SVG Camera Icon */}
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 131.4 101" className="w-[1.2rem] md:w-[2.2rem] fill-[#15110f] stroke-white/40 stroke-[4px] group-hover:stroke-white/80 transition-colors duration-300 mt-[-0.3rem]">
-                    <path d="M99.2,39.2c-.3-4.6-3.9-8.4-8.5-8.7-1.7-.1-10.8.3-11.4-.2-.9-1.9-.9-4.5-2.5-6.1s-1.8-1-2.7-1.1c-5.3-.5-11.5.3-16.9,0-3.8.5-3.7,4.3-4.8,7.1-.7.5-9.7,0-11.5.2-4.9.3-8.2,4.1-8.7,8.9.5,9.3-.7,19.3,0,28.5.5,7.4,5,9.6,11.8,9.9,13.3.6,28.5.3,41.8-.2,4.5-.2,8.2.6,11.4-3.4,1.8-2.2,2.1-4.4,2.2-7.2.3-9.2-.5-18.6-.1-27.8h0ZM69.6,54c-2.4,2.2-2.6,5.9-3.8,8.8-.4,0-1.7-5.9-2.2-6.9-2-3.7-6.7-4-10.2-5.2,3.4-1.2,7.5-1.4,9.7-4.6,1.7-2.4,1.4-5.3,2.7-7.8,1.2,3.2,1.3,7.4,4.4,9.6,2.3,1.7,4.6,1.6,7.1,2.3.4.1.8.1.9.7-2.8.9-6.3,1.1-8.5,3.2h-.1ZM91.7,41.9c-2.2,1.9-5.2-1.2-3.2-3.5,2-2.4,5.9,1.2,3.2,3.5Z" />
-                </svg>
-                {item.count}
-            </div>
-
-{/* Hover Image Reveal */}
-            {item.image && item.image.trim() && item.image !== "undefined" && item.image !== "null" && (item.image.startsWith("/") || item.image.startsWith("http")) && (
-            <div className='absolute inset-0 pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500 overflow-hidden z-10 w-full h-full'>
-                <Image 
-                    src={item.image} 
-                    alt={item.firstName} 
-                    fill
-                    sizes='50vw'
-                    className='w-[60%] md:w-[35%] h-auto object-cover opacity-[0.15] transition-all duration-700 ease-out will-change-transform' 
-                />
-            </div>
-            )}
         </div>
     );
 }
