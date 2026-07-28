@@ -57,8 +57,7 @@ export default function Navigation() {
             }}
             animate={hidden ? "hidden" : "visible"}
             transition={{ duration: 0.35, ease: "easeInOut" }}
-            className="fixed top-0 left-0 w-full z-[100] h-[80px] md:h-[100px] px-6 md:px-[64px] lg:px-[80px] flex justify-between items-center border-b border-white/10 text-white uppercase font-monument text-[12px] md:text-[13px] font-bold tracking-[1px] leading-[1.3]"
-            style={{ backgroundColor: 'transparent' }}
+            className="fixed top-0 left-0 w-full z-[100] h-[80px] md:h-[100px] px-6 md:px-[64px] lg:px-[80px] flex justify-between items-center border-b border-white/10 text-white uppercase font-monument text-[12px] md:text-[13px] font-bold tracking-[1px] leading-[1.3] bg-[#15110f]/80 backdrop-blur-md"
         >
             {/* Mobile Navigation (Rotating Text Dropdown) */}
             <div className="md:hidden relative z-[110]">

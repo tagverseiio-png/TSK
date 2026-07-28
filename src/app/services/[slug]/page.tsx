@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import clientPromise from "@/lib/mongodb";
+import ExploreButton from "@/components/ExploreButton";
 
 export const revalidate = 30; // ISR: serve cached, revalidate every 30s
 
@@ -76,7 +77,7 @@ export default async function ServicePage({
                         <span className="font-monument text-brand-orange text-[10px] md:text-[12px] tracking-[4px] uppercase mb-4 md:mb-6 block">
                             Service {service.number}
                         </span>
-                        <h1 className="font-space font-bold text-6xl md:text-8xl lg:text-[150px] leading-[0.9] lg:tracking-[-4px] uppercase text-white break-words">
+                        <h1 className="font-space font-bold text-[12vw] md:text-[10vw] lg:text-[8.5vw] xl:text-[130px] leading-[0.9] lg:tracking-[-4px] uppercase text-white">
                             {service.title}
                         </h1>
                     </div>
@@ -86,16 +87,14 @@ export default async function ServicePage({
                         <p className="text-white/80 text-lg md:text-xl leading-relaxed tracking-wide mb-8 md:mb-10">
                             {service.description}
                         </p>
-                        <a href="#explore" className="inline-flex items-center gap-2 font-space font-bold text-base md:text-lg text-[#15110f] bg-white px-6 md:px-8 py-3 md:py-4 hover:bg-brand-orange hover:text-white transition-colors duration-300">
-                            ↓ Explore Service
-                        </a>
+                        <ExploreButton />
                     </div>
                 </div>
 
                 <div className="w-full h-[1px] bg-white/10 mb-16 md:mb-24" />
 
                 {/* Media Showcase */}
-                <div id="explore" className="w-full aspect-video lg:aspect-[21/9] bg-white/5 relative overflow-hidden mb-24 md:mb-32">
+                <div id="explore" className="w-full aspect-video bg-white/5 relative overflow-hidden mb-24 md:mb-32 rounded-2xl">
                     {service.mediaUrl ? (
                         service.mediaType === 'video' ? (
                             <video 

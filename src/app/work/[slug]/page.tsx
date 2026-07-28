@@ -124,36 +124,7 @@ export default async function WorkCasePage({
 
   return (
     <div className="relative min-h-screen bg-[#15110f]">
-      {/* COMPACT SUB-NAVIGATION — Sidebar on desktop, compact rail/toggle on mobile */}
-      <nav className="fixed left-4 md:left-[2.5rem] top-[14rem] md:top-40 z-[50] flex flex-col gap-4 pointer-events-none">
-        {/* Desktop compact view (dots/short lines) */}
-        <div className="hidden lg:flex flex-col gap-1 pointer-events-auto">
-          {caseList.map((cs) => (
-            <Link
-              key={cs.slug}
-              href={`/work/${cs.slug}`}
-              className={`group flex items-center gap-3 transition-all duration-500 py-1.5`}
-              title={cs.name}
-            >
-              <span className={`h-[1.5px] transition-all duration-500 rounded-full ${slug === cs.slug ? 'w-8 bg-brand-orange' : 'w-4 bg-white/20 group-hover:w-6 group-hover:bg-white/40'}`} />
-              <span className={`text-[9px] font-monument font-bold tracking-[2px] transition-all duration-500 ${slug === cs.slug ? 'text-white opacity-100' : 'text-white/20 opacity-0 group-hover:opacity-60 translate-x-[-10px] group-hover:translate-x-0'}`}>
-                {cs.name}
-              </span>
-            </Link>
-          ))}
-        </div>
 
-        {/* Mobile/Tablet compact rail */}
-        <div className="lg:hidden flex flex-col gap-3 pointer-events-auto bg-black/40 backdrop-blur-md p-2 rounded-full border border-white/10 shadow-xl">
-          {caseList.map((cs) => (
-            <Link
-              key={cs.slug}
-              href={`/work/${cs.slug}`}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${slug === cs.slug ? 'bg-brand-orange scale-125 shadow-[0_0_10px_rgba(255,107,0,0.5)]' : 'bg-white/10'}`}
-            />
-          ))}
-        </div>
-      </nav>
 
       <BackButton />
 

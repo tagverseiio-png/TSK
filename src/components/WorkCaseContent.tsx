@@ -103,9 +103,9 @@ export default function WorkCaseContent({
     return (
         <div className="relative w-full overflow-x-hidden">
             {/* ─── HERO SECTION ─── */}
-            <section className="relative min-h-[80vh] flex flex-col justify-center pl-16 pr-6 md:px-[8rem] pt-[15vh] pb-16">
+            <section className="relative flex flex-col justify-end pl-16 pr-6 md:px-[8rem] pt-[20vh] md:pt-[25vh] pb-12 md:pb-20">
                 {/* Background number */}
-                <div className="absolute right-[5vw] top-[10%] md:top-[20%] font-monument text-white/[0.03] text-[35vw] md:text-[25vw] font-bold leading-none pointer-events-none select-none z-0 will-change-transform">
+                <div className="absolute right-[5vw] top-1/2 -translate-y-1/2 font-monument text-white/[0.03] text-[35vw] md:text-[25vw] font-bold leading-none pointer-events-none select-none z-0 will-change-transform">
                     {study.number}
                 </div>
 
@@ -149,7 +149,7 @@ export default function WorkCaseContent({
             </section>
 
             {/* ─── MAIN SLIDESHOW SECTION ─── */}
-            <section className="relative w-full min-h-screen py-24 md:py-32 pl-14 pr-6 md:px-[8rem] flex items-center overflow-hidden">
+            <section className="relative w-full py-12 md:py-20 pl-14 pr-6 md:px-[8rem] overflow-hidden">
                 {/* SUBTLE BACKGROUND IMAGE */}
                 <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
                     <Image
@@ -163,10 +163,10 @@ export default function WorkCaseContent({
                     <div className="absolute inset-0 bg-gradient-to-b from-[#15110f] via-transparent to-[#0D0D0D]" />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-[45%_55%] gap-12 lg:gap-[80px] items-center w-full relative z-10">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center w-full relative z-10">
                     
                     {/* ── LEFT COLUMN: Text Content & Captions ── */}
-                    <div className="flex flex-col gap-10 max-w-full overflow-hidden">
+                    <div className="flex flex-col gap-8 max-w-full overflow-hidden lg:col-span-5 lg:col-start-1">
                         {/* Hero Tagline / Statement */}
                         <motion.div
                             initial={{ opacity: 0, x: -30 }}
@@ -175,7 +175,6 @@ export default function WorkCaseContent({
                             transition={{ duration: 0.8 }}
                             className="will-change-[transform,opacity] max-w-full"
                         >
-                            <div className="w-12 h-[2px] bg-brand-orange mb-8" />
                             <h2 className="text-white text-[16px] sm:text-[18px] md:text-[24px] lg:text-[28px] leading-[1.3] md:leading-[1.2] tracking-tight font-monument uppercase break-words w-full hyphens-auto">
                                 {study.heroTagline.split(" ").slice(0, 4).join(" ")}
                                 <br className="hidden md:block" />
@@ -205,14 +204,13 @@ export default function WorkCaseContent({
                                         setCurrentIndex(i);
                                         setIsAutoPlaying(false);
                                     }}
-                                    className={`text-left transition-all duration-500 group flex items-start gap-4 py-2 relative overflow-hidden ${
+                                    className={`text-left transition-colors duration-500 group flex items-center py-2 relative overflow-hidden ${
                                         currentIndex === i 
                                             ? "text-white opacity-100" 
                                             : "text-white/20 hover:text-white/40"
                                     }`}
                                 >
-                                    <div className={`mt-3 h-[1px] transition-all duration-700 ${currentIndex === i ? 'w-10 bg-brand-orange' : 'w-0 group-hover:w-6 bg-white/40'}`} />
-                                    <span className={`text-[11px] md:text-[12px] font-monument tracking-[2.5px] uppercase transition-all duration-500 ${currentIndex === i ? 'translate-x-0' : 'translate-x-[-10px]'}`}>
+                                    <span className="text-[11px] md:text-[12px] font-monument tracking-[2.5px] uppercase">
                                         {item.caption}
                                     </span>
                                 </button>
@@ -222,7 +220,7 @@ export default function WorkCaseContent({
 
                     {/* ── RIGHT COLUMN: Single Picture Slideshow ── */}
                     <div 
-                        className="relative group w-full h-[60vh] md:h-[70vh] lg:h-[75vh] rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_120px_rgba(0,0,0,0.9)] cursor-ns-resize"
+                        className="relative group w-full h-[60vh] md:h-[70vh] lg:h-[75vh] rounded-2xl overflow-hidden border border-white/[0.08] shadow-[0_0_120px_rgba(0,0,0,0.9)] cursor-ns-resize lg:col-span-7 lg:col-start-6"
                         onWheel={handleWheel}
                     >
                         {/* Render all media items in the DOM so they buffer in the background instantly! */}
