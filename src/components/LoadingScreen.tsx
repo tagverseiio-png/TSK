@@ -91,17 +91,6 @@ export default function LoadingScreen({ onComplete }: { onComplete: () => void }
 
                     {/* Counter */}
                     <div className="relative flex flex-col items-center gap-6">
-                        {/* Big number */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.4, delay: 0.1 }}
-                            className="font-monument text-[18vw] md:text-[12vw] leading-none text-white/90 tabular-nums tracking-tighter select-none"
-                            style={{ fontVariantNumeric: "tabular-nums" }}
-                        >
-                            {String(count).padStart(2, "0")}
-                            <span className="text-brand-orange">.</span>
-                        </motion.div>
 
                         {/* Progress bar */}
                         <div className="w-[240px] md:w-[320px] h-[1.5px] bg-white/10 relative overflow-hidden rounded-full">
