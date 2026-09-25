@@ -42,8 +42,8 @@ const projects: ProjectType[] = [
         id: 5,
         title: "Custom Visual Content & Brand Experiences",
         description: "Tailored visual solutions for unique brand stories.",
-        video: "/video5_desktop_web.mp4",
-        mobileVideo: "/video5_mobile_web.mp4"
+        video: "/video5_final.mp4",
+        mobileVideo: "/video5_mobile_final.mp4"
     }
 ];
 
