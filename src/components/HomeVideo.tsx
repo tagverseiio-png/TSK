@@ -18,13 +18,13 @@ const projects: ProjectType[] = [
         id: 1,
         title: "Creative Direction & Concept Planning",
         description: "This is the foundation. Strategy + ideas that drive everything else.",
-        video: "/video1_web.mp4"
+        video: "/video2.mp4"
     },
     {
         id: 2,
         title: "Professional Photography & Videography",
         description: "Core production service. High demand, visual impact, premium pricing.",
-        video: "/video2.mp4"
+        video: "/video1_web.mp4"
     },
     {
         id: 3,
