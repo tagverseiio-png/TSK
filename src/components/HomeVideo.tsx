@@ -30,17 +30,17 @@ const projects: ProjectType[] = [
         id: 3,
         title: "High-End Commercial Ads",
         description: "Biggest money-maker. Brands pay more for cinematic ad production.",
-        video: "/video1.mp4"
+        video: "/video3.mp4"
     },
     {
         id: 4,
         title: "Brand Campaigns & Strategy",
         description: "Long-term client retention + higher-ticket projects.",
-        video: "/video1.mp4"
+        video: "/video4.mp4"
     },
     {
         id: 5,
-        title: "Custom Project",
+        title: "Custom Visual Content & Brand Experiences",
         description: "Tailored visual solutions for unique brand stories.",
         video: "/video5_desktop.mp4",
         mobileVideo: "/video5_mobile.mp4"
@@ -72,11 +72,11 @@ export default function HomeVideo() {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
         handleResize(); // Initial check
         window.addEventListener('resize', handleResize);
-        
+
         const frame = requestAnimationFrame(() => {
             setVideoOpacity(0.6);
         });
-        
+
         return () => {
             cancelAnimationFrame(frame);
             window.removeEventListener('resize', handleResize);
@@ -129,9 +129,9 @@ export default function HomeVideo() {
             if (lastLoadedSrc.current !== currentSrc) {
                 lastLoadedSrc.current = currentSrc;
                 videoRef.current.load();
-                videoRef.current.play().catch(() => {});
+                videoRef.current.play().catch(() => { });
             }
-            
+
             // Step 3: Fade back in
             const frame = requestAnimationFrame(() => {
                 setVideoOpacity(0.6);
