@@ -5,7 +5,15 @@ import { AnimatePresence, m as motion } from "framer-motion";
 import { Volume2, VolumeX } from "lucide-react";
 
 
-const projects = [
+type ProjectType = {
+    id: number;
+    title: string;
+    description: string;
+    video: string;
+    mobileVideo?: string;
+};
+
+const projects: ProjectType[] = [
     {
         id: 1,
         title: "Creative Direction & Concept Planning",
@@ -29,6 +37,13 @@ const projects = [
         title: "Brand Campaigns & Strategy",
         description: "Long-term client retention + higher-ticket projects.",
         video: "/video1.mp4"
+    },
+    {
+        id: 5,
+        title: "Custom Project",
+        description: "Tailored visual solutions for unique brand stories.",
+        video: "/video5_desktop.mp4",
+        mobileVideo: "/video5_mobile.mp4"
     }
 ];
 
@@ -40,19 +55,32 @@ export default function HomeVideo() {
     const [isMuted, setIsMuted] = useState(true);
     const [videoDuration, setVideoDuration] = useState(AUTO_ROTATE_TIME);
     const [videoOpacity, setVideoOpacity] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const lastLoadedSrc = useRef<string | null>(null);
+
+    const getActiveVideoSrc = useCallback((index: number) => {
+        return isMobile && projects[index].mobileVideo ? projects[index].mobileVideo! : projects[index].video;
+    }, [isMobile]);
 
     const nextVideo = useCallback(() => {
         setActiveIndex((prev) => (prev + 1) % projects.length);
     }, []);
 
-    // Fade in on initial mount
+    // Fade in on initial mount and detect mobile
     useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth < 768);
+        handleResize(); // Initial check
+        window.addEventListener('resize', handleResize);
+        
         const frame = requestAnimationFrame(() => {
             setVideoOpacity(0.6);
         });
-        return () => cancelAnimationFrame(frame);
+        
+        return () => {
+            cancelAnimationFrame(frame);
+            window.removeEventListener('resize', handleResize);
+        };
     }, []);
 
     // Auto-rotate when muted
@@ -68,8 +96,8 @@ export default function HomeVideo() {
     useEffect(() => {
         if (activeIndex === displayIndex) return;
 
-        const nextSrc = projects[activeIndex].video;
-        const currentSrc = projects[displayIndex].video;
+        const nextSrc = getActiveVideoSrc(activeIndex);
+        const currentSrc = getActiveVideoSrc(displayIndex);
 
         if (nextSrc === currentSrc) {
             // Seamless transition: Video remains playing, just update text
@@ -91,11 +119,11 @@ export default function HomeVideo() {
             cancelAnimationFrame(frame);
             clearTimeout(timer);
         };
-    }, [activeIndex, displayIndex]);
+    }, [activeIndex, displayIndex, getActiveVideoSrc]);
 
     useEffect(() => {
         if (videoRef.current) {
-            const currentSrc = projects[displayIndex].video;
+            const currentSrc = getActiveVideoSrc(displayIndex);
 
             // Only reload the video element if the source URL actually changed
             if (lastLoadedSrc.current !== currentSrc) {
@@ -110,7 +138,7 @@ export default function HomeVideo() {
             });
             return () => cancelAnimationFrame(frame);
         }
-    }, [displayIndex]);
+    }, [displayIndex, getActiveVideoSrc]);
 
     const handleVideoEnd = () => {
         if (!isMuted) {
@@ -148,7 +176,7 @@ export default function HomeVideo() {
                     onEnded={handleVideoEnd}
                     onLoadedMetadata={handleLoadedMetadata}
                     className="w-full h-full object-cover will-change-[opacity]"
-                    src={projects[displayIndex].video}
+                    src={getActiveVideoSrc(displayIndex)}
                 />
             </div>
 
