@@ -4,7 +4,7 @@ import BackButton from "@/components/BackButton";
 import type { MediaItem } from "@/components/MediaGallery";
 import clientPromise from "@/lib/mongodb";
 
-export const revalidate = 3600; // ISR: rebuild at most once per hour
+export const revalidate = 0; // Disable ISR caching to show updates immediately
 export const dynamicParams = true; // allow slugs not in generateStaticParams
 
 // Pre-build all known work slug pages at build time — eliminates cold renders
