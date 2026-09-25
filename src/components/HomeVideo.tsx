@@ -30,13 +30,13 @@ const projects: ProjectType[] = [
         id: 3,
         title: "High-End Commercial Ads",
         description: "Biggest money-maker. Brands pay more for cinematic ad production.",
-        video: "/video3.mp4"
+        video: "/video1_web.mp4"
     },
     {
         id: 4,
         title: "Brand Campaigns & Strategy",
         description: "Long-term client retention + higher-ticket projects.",
-        video: "/video4.mp4"
+        video: "/video1_web.mp4"
     },
     {
         id: 5,
